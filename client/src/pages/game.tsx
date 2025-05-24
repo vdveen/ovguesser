@@ -71,9 +71,6 @@ export default function Game() {
     onSuccess: (result: GuessResult) => {
       setLastGuess(result);
       
-      // Increment attempts for next guess
-      setAttempts(prev => prev + 1);
-      
       // Add current guess to previous guesses if not winning
       if (!result.isWin && userMarkerPosition) {
         setPreviousGuesses(prev => [...prev, {
@@ -82,6 +79,9 @@ export default function Game() {
           distance: result.distance,
           attempt: result.attempt
         }]);
+        
+        // Increment attempts for next guess only if not winning
+        setAttempts(prev => prev + 1);
       }
       
       if (result.isWin) {
