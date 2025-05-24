@@ -54,7 +54,7 @@ export default function ResultModal({ distance, onTryAgain, onNewGame, onClose }
   const resultInfo = getResultInfo();
 
   return (
-    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[1001] p-4">
       <Card className="w-full max-w-sm mx-auto shadow-2xl">
         <CardHeader className="text-center pb-4">
           <div className="flex justify-between items-start mb-2">

@@ -132,7 +132,7 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, isLoadi
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 text-xs">
+      <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 text-xs z-[999]">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-red-500 rounded-full border border-white shadow-sm"></div>
