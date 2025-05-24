@@ -71,6 +71,9 @@ export default function Game() {
     onSuccess: (result: GuessResult) => {
       setLastGuess(result);
       
+      // Increment attempts for next guess
+      setAttempts(prev => prev + 1);
+      
       // Add current guess to previous guesses if not winning
       if (!result.isWin && userMarkerPosition) {
         setPreviousGuesses(prev => [...prev, {
@@ -140,17 +143,7 @@ export default function Game() {
     });
   };
 
-  // Handle try again
-  const handleTryAgain = () => {
-    setShowResult(false);
-    setLastGuess(null);
-    setAttempts(prev => prev + 1);
-    setUserMarkerPosition(null);
-    // Don't reset station marker if location is revealed
-    if (!locationRevealed) {
-      setStationMarkerPosition(null);
-    }
-  };
+
 
   // Handle reveal location
   const handleRevealLocation = () => {
@@ -211,7 +204,6 @@ export default function Game() {
         stats={stats}
         onNewGame={startNewGame}
         lastResult={showResult ? lastGuess : null}
-        onTryAgain={handleTryAgain}
         onRevealLocation={handleRevealLocation}
       />
 
