@@ -54,33 +54,50 @@ export default function GameHeader({ stationName, attempts, stats, onNewGame, la
           {/* Result Display */}
           {lastResult && resultInfo && (
             <div className="mb-4 p-3 bg-slate-50 rounded-lg border-l-4" style={{ borderLeftColor: resultInfo.color }}>
-              <div className="flex items-center gap-2 mb-2">
+              {/* Icon/text row */}
+              <div className="flex items-center gap-2 mb-3">
                 <Target className="w-4 h-4 text-slate-500" />
                 <span className="text-sm font-medium text-slate-700">
                   {lastResult.isWin ? '🎯 Great guess!' : resultInfo.description}
                 </span>
               </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs text-slate-600">Distance:</span>
-                  <div className="text-lg font-bold" style={{ color: resultInfo.color }}>
-                    {displayDistance}
-                  </div>
+              
+              {/* Distance row */}
+              <div className="mb-2">
+                <span className="text-xs text-slate-600">Distance:</span>
+                <div className="text-lg font-bold" style={{ color: resultInfo.color }}>
+                  {displayDistance}
                 </div>
-                <div className="flex gap-1">
-                  {!lastResult.isWin && onTryAgain && (
-                    <Button size="sm" variant="outline" onClick={onTryAgain}>
+              </div>
+
+              {/* Attempts row */}
+              <div className="mb-3">
+                <span className="text-xs text-slate-600">Attempts:</span>
+                <div className="text-lg font-bold" style={{ 
+                  color: attempts <= 2 ? '#10b981' : 
+                         attempts <= 4 ? '#f59e0b' : '#ef4444' 
+                }}>
+                  {attempts}
+                </div>
+              </div>
+
+              {/* Button row */}
+              {!lastResult.isWin && (
+                <div className="flex gap-2">
+                  {onTryAgain && (
+                    <Button size="sm" variant="outline" onClick={onTryAgain} className="flex-1">
                       <RotateCcw className="w-3 h-3 mr-1" />
                       Try Again
                     </Button>
                   )}
-                  {!lastResult.isWin && onRevealLocation && (
-                    <Button size="sm" variant="outline" onClick={onRevealLocation}>
-                      <Eye className="w-3 h-3" />
+                  {onRevealLocation && (
+                    <Button size="sm" variant="outline" onClick={onRevealLocation} className="flex-1">
+                      <Eye className="w-3 h-3 mr-1" />
+                      Reveal
                     </Button>
                   )}
                 </div>
-              </div>
+              )}
             </div>
           )}
           
