@@ -56,8 +56,11 @@ export default function Game() {
   // Submit guess mutation
   const guessMutation = useMutation({
     mutationFn: async (data: { stationId: number; userLat: number; userLng: number; attempt: number }) => {
+      console.log('Sending guess to server with stationId:', data.stationId);
       const response = await apiRequest("POST", "/api/guess", data);
-      return response.json();
+      const result = await response.json();
+      console.log('Server response:', result);
+      return result;
     },
     onSuccess: (result: GuessResult) => {
       setLastGuess(result);
@@ -121,6 +124,7 @@ export default function Game() {
   const handleMapClick = (lat: number, lng: number) => {
     if (!currentStation || guessMutation.isPending) return;
     
+    console.log('Making guess for station:', currentStation.name, currentStation.id);
     setUserMarkerPosition({ lat, lng });
     
     guessMutation.mutate({
@@ -172,6 +176,7 @@ export default function Game() {
   // Update current station when random station is fetched
   useEffect(() => {
     if (randomStation) {
+      console.log('Setting new station:', randomStation.name, randomStation.id);
       setCurrentStation(randomStation);
     }
   }, [randomStation]);
