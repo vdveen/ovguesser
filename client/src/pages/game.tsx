@@ -143,6 +143,7 @@ export default function Game() {
   // Handle try again
   const handleTryAgain = () => {
     setShowResult(false);
+    setLastGuess(null);
     setAttempts(prev => prev + 1);
     setUserMarkerPosition(null);
     // Don't reset station marker if location is revealed
@@ -209,6 +210,9 @@ export default function Game() {
         attempts={attempts}
         stats={stats}
         onNewGame={startNewGame}
+        lastResult={showResult ? lastGuess : null}
+        onTryAgain={handleTryAgain}
+        onRevealLocation={handleRevealLocation}
       />
 
       {/* Game Map */}
@@ -220,16 +224,7 @@ export default function Game() {
         isLoading={guessMutation.isPending}
       />
 
-      {/* Result Modal */}
-      {showResult && lastGuess && (
-        <ResultModal
-          distance={lastGuess.distance}
-          onTryAgain={handleTryAgain}
-          onNewGame={handleGameComplete}
-          onRevealLocation={handleRevealLocation}
-          onClose={() => setShowResult(false)}
-        />
-      )}
+
 
       {/* Win Modal */}
       {showWin && lastGuess && currentStation && (
