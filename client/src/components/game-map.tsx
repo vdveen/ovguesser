@@ -4,18 +4,27 @@ import { MapPin, Loader2 } from "lucide-react";
 // Import Leaflet dynamically to avoid SSR issues
 let L: any = null;
 
+interface PreviousGuess {
+  lat: number;
+  lng: number;
+  distance: number;
+  attempt: number;
+}
+
 interface GameMapProps {
   onMapClick: (lat: number, lng: number) => void;
   userMarker?: { lat: number; lng: number } | null;
   stationMarker?: { lat: number; lng: number } | null;
+  previousGuesses?: PreviousGuess[];
   isLoading?: boolean;
 }
 
-export default function GameMap({ onMapClick, userMarker, stationMarker, isLoading }: GameMapProps) {
+export default function GameMap({ onMapClick, userMarker, stationMarker, previousGuesses = [], isLoading }: GameMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
   const stationMarkerRef = useRef<any>(null);
+  const previousGuessMarkersRef = useRef<any[]>([]);
 
   // Initialize map
   useEffect(() => {
@@ -117,6 +126,40 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, isLoadi
     }
   }, [stationMarker]);
 
+  // Update previous guess markers
+  useEffect(() => {
+    if (!mapInstanceRef.current || !L) return;
+
+    // Remove existing previous guess markers
+    previousGuessMarkersRef.current.forEach(marker => {
+      if (marker) {
+        mapInstanceRef.current.removeLayer(marker);
+      }
+    });
+    previousGuessMarkersRef.current = [];
+
+    // Add new previous guess markers
+    previousGuesses.forEach((guess, index) => {
+      const distanceKm = guess.distance > 1000 
+        ? `${(guess.distance / 1000).toFixed(1)}km` 
+        : `${Math.round(guess.distance)}m`;
+      
+      const marker = L.marker([guess.lat, guess.lng], {
+        icon: L.divIcon({
+          className: 'previous-guess-marker',
+          html: `
+            <div style="background: #f59e0b; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);"></div>
+            <div style="position: absolute; top: 22px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap; pointer-events: none;">${distanceKm}</div>
+          `,
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+        })
+      }).addTo(mapInstanceRef.current);
+      
+      previousGuessMarkersRef.current.push(marker);
+    });
+  }, [previousGuesses]);
+
   return (
     <div className="relative w-full h-full">
       <div ref={mapRef} className="w-full h-full" />
@@ -136,7 +179,11 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, isLoadi
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-red-500 rounded-full border border-white shadow-sm"></div>
-            <span className="text-slate-600">Your guess</span>
+            <span className="text-slate-600">Current guess</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-amber-500 rounded-full border border-white shadow-sm"></div>
+            <span className="text-slate-600">Previous guesses</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-emerald-500 rounded-full border border-white shadow-sm"></div>
