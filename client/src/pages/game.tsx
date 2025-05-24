@@ -43,14 +43,20 @@ export default function Game() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // State for tracking new game requests
-  const [gameId, setGameId] = useState(1);
-
-  // Fetch new random station
-  const { data: randomStation, isLoading: isLoadingStation, refetch: fetchNewStation } = useQuery({
-    queryKey: ["/api/stations/random", gameId],
-    enabled: false, // We'll trigger this manually
-    staleTime: 0, // Always fetch fresh data
+  // Fetch new random station mutation
+  const fetchStationMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("GET", "/api/stations/random");
+      return response.json();
+    },
+    onSuccess: (station) => {
+      console.log('Fetched new station:', station.name, station.id);
+      console.log('Station coordinates:', station.coordinates);
+      setCurrentStation(station);
+    },
+    onError: (error) => {
+      console.error('Failed to fetch station:', error);
+    }
   });
 
   // Submit guess mutation
@@ -98,7 +104,7 @@ export default function Game() {
   });
 
   // Start new game
-  const startNewGame = async () => {
+  const startNewGame = () => {
     setShowResult(false);
     setShowWin(false);
     setLastGuess(null);
@@ -109,20 +115,9 @@ export default function Game() {
     setPreviousGuesses([]);
     setCurrentStation(null); // Clear current station immediately
     
-    // Increment game ID to force new query
-    setGameId(prev => prev + 1);
-    
-    // Fetch new station and wait for it
-    try {
-      const result = await fetchNewStation();
-      if (result.data) {
-        console.log('New game started with station:', result.data.name, result.data.id);
-        console.log('New station coordinates:', result.data.coordinates);
-        setCurrentStation(result.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch new station:', error);
-    }
+    console.log('Starting new game...');
+    // Fetch new station
+    fetchStationMutation.mutate();
   };
 
   // Handle map click
@@ -183,16 +178,7 @@ export default function Game() {
     startNewGame();
   }, []);
 
-  // Update current station when random station is fetched
-  useEffect(() => {
-    if (randomStation) {
-      console.log('Setting new station:', randomStation.name, randomStation.id);
-      console.log('Station coordinates:', randomStation.coordinates);
-      setCurrentStation(randomStation);
-    }
-  }, [randomStation]);
-
-  if (isLoadingStation && !currentStation) {
+  if (fetchStationMutation.isPending && !currentStation) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
