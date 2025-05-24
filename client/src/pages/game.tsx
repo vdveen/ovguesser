@@ -43,10 +43,14 @@ export default function Game() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  // State for tracking new game requests
+  const [gameId, setGameId] = useState(1);
+
   // Fetch new random station
   const { data: randomStation, isLoading: isLoadingStation, refetch: fetchNewStation } = useQuery({
-    queryKey: ["/api/stations/random"],
+    queryKey: ["/api/stations/random", gameId],
     enabled: false, // We'll trigger this manually
+    staleTime: 0, // Always fetch fresh data
   });
 
   // Submit guess mutation
@@ -100,6 +104,9 @@ export default function Game() {
     setStationMarkerPosition(null);
     setLocationRevealed(false);
     setPreviousGuesses([]);
+    
+    // Increment game ID to force new query
+    setGameId(prev => prev + 1);
     
     const result = await fetchNewStation();
     if (result.data) {
