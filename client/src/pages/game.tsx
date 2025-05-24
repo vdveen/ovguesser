@@ -107,24 +107,34 @@ export default function Game() {
     setStationMarkerPosition(null);
     setLocationRevealed(false);
     setPreviousGuesses([]);
+    setCurrentStation(null); // Clear current station immediately
     
     // Increment game ID to force new query
     setGameId(prev => prev + 1);
     
-    // Small delay to ensure state updates, then fetch new station
-    setTimeout(async () => {
+    // Fetch new station and wait for it
+    try {
       const result = await fetchNewStation();
       if (result.data) {
+        console.log('New game started with station:', result.data.name, result.data.id);
+        console.log('New station coordinates:', result.data.coordinates);
         setCurrentStation(result.data);
       }
-    }, 100);
+    } catch (error) {
+      console.error('Failed to fetch new station:', error);
+    }
   };
 
   // Handle map click
   const handleMapClick = (lat: number, lng: number) => {
     if (!currentStation || guessMutation.isPending) return;
     
-    console.log('Making guess for station:', currentStation.name, currentStation.id);
+    console.log('=== MAKING GUESS ===');
+    console.log('Current station in state:', currentStation.name, currentStation.id);
+    console.log('Current station coordinates:', currentStation.coordinates);
+    console.log('User clicked at:', lat, lng);
+    console.log('Attempt number:', attempts);
+    
     setUserMarkerPosition({ lat, lng });
     
     guessMutation.mutate({
