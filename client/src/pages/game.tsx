@@ -1,0 +1,198 @@
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
+import GameHeader from "@/components/game-header";
+import GameMap from "@/components/game-map";
+import ResultModal from "@/components/result-modal";
+import WinModal from "@/components/win-modal";
+import { Loader2 } from "lucide-react";
+import type { TrainStation } from "@shared/schema";
+
+interface GuessResult {
+  distance: number;
+  isWin: boolean;
+  stationLocation: {
+    lat: number;
+    lng: number;
+  };
+  attempt: number;
+}
+
+export default function Game() {
+  const [currentStation, setCurrentStation] = useState<TrainStation | null>(null);
+  const [attempts, setAttempts] = useState(1);
+  const [showResult, setShowResult] = useState(false);
+  const [showWin, setShowWin] = useState(false);
+  const [lastGuess, setLastGuess] = useState<GuessResult | null>(null);
+  const [userMarkerPosition, setUserMarkerPosition] = useState<{lat: number, lng: number} | null>(null);
+  const [stationMarkerPosition, setStationMarkerPosition] = useState<{lat: number, lng: number} | null>(null);
+
+  // Fetch game statistics
+  const { data: stats } = useQuery({
+    queryKey: ["/api/stats"],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Fetch new random station
+  const { data: randomStation, isLoading: isLoadingStation, refetch: fetchNewStation } = useQuery({
+    queryKey: ["/api/stations/random"],
+    enabled: false, // We'll trigger this manually
+  });
+
+  // Submit guess mutation
+  const guessMutation = useMutation({
+    mutationFn: async (data: { stationId: number; userLat: number; userLng: number; attempt: number }) => {
+      const response = await apiRequest("POST", "/api/guess", data);
+      return response.json();
+    },
+    onSuccess: (result: GuessResult) => {
+      setLastGuess(result);
+      setStationMarkerPosition(result.stationLocation);
+      
+      if (result.isWin) {
+        setShowWin(true);
+      } else {
+        setShowResult(true);
+      }
+    },
+  });
+
+  // Save game result mutation
+  const saveResultMutation = useMutation({
+    mutationFn: async (data: { stationId: number; attempts: number; finalDistance: number; completed: number }) => {
+      const response = await apiRequest("POST", "/api/game-result", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate stats to refresh them
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+    },
+  });
+
+  // Start new game
+  const startNewGame = async () => {
+    setShowResult(false);
+    setShowWin(false);
+    setLastGuess(null);
+    setAttempts(1);
+    setUserMarkerPosition(null);
+    setStationMarkerPosition(null);
+    
+    const result = await fetchNewStation();
+    if (result.data) {
+      setCurrentStation(result.data);
+    }
+  };
+
+  // Handle map click
+  const handleMapClick = (lat: number, lng: number) => {
+    if (!currentStation || guessMutation.isPending) return;
+    
+    setUserMarkerPosition({ lat, lng });
+    
+    guessMutation.mutate({
+      stationId: currentStation.id,
+      userLat: lat,
+      userLng: lng,
+      attempt: attempts,
+    });
+  };
+
+  // Handle try again
+  const handleTryAgain = () => {
+    setShowResult(false);
+    setAttempts(prev => prev + 1);
+    setUserMarkerPosition(null);
+    setStationMarkerPosition(null);
+  };
+
+  // Handle game completion
+  const handleGameComplete = () => {
+    if (currentStation && lastGuess) {
+      saveResultMutation.mutate({
+        stationId: currentStation.id,
+        attempts,
+        finalDistance: lastGuess.distance,
+        completed: lastGuess.isWin ? 1 : 0,
+      });
+    }
+    startNewGame();
+  };
+
+  // Initialize first game
+  useEffect(() => {
+    startNewGame();
+  }, []);
+
+  // Update current station when random station is fetched
+  useEffect(() => {
+    if (randomStation) {
+      setCurrentStation(randomStation);
+    }
+  }, [randomStation]);
+
+  if (isLoadingStation && !currentStation) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <Loader2 className="w-16 h-16 animate-spin mx-auto mb-4 text-blue-600" />
+          <h3 className="text-xl font-semibold text-slate-900 mb-2">Loading OVGuesser</h3>
+          <p className="text-slate-600">Preparing Dutch train stations...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentStation) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <h3 className="text-xl font-semibold text-slate-900 mb-2">No stations available</h3>
+          <p className="text-slate-600">Failed to load train station data.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-screen overflow-hidden">
+      {/* Game Header */}
+      <GameHeader 
+        stationName={currentStation.name}
+        attempts={attempts}
+        stats={stats}
+        onNewGame={startNewGame}
+      />
+
+      {/* Game Map */}
+      <GameMap 
+        onMapClick={handleMapClick}
+        userMarker={userMarkerPosition}
+        stationMarker={stationMarkerPosition}
+        isLoading={guessMutation.isPending}
+      />
+
+      {/* Result Modal */}
+      {showResult && lastGuess && (
+        <ResultModal
+          distance={lastGuess.distance}
+          onTryAgain={handleTryAgain}
+          onNewGame={handleGameComplete}
+          onClose={() => setShowResult(false)}
+        />
+      )}
+
+      {/* Win Modal */}
+      {showWin && lastGuess && currentStation && (
+        <WinModal
+          stationName={currentStation.name}
+          finalDistance={lastGuess.distance}
+          attempts={attempts}
+          onNewGame={handleGameComplete}
+          onClose={() => setShowWin(false)}
+        />
+      )}
+    </div>
+  );
+}
