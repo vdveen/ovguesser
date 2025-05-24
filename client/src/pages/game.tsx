@@ -177,6 +177,7 @@ export default function Game() {
   useEffect(() => {
     if (randomStation) {
       console.log('Setting new station:', randomStation.name, randomStation.id);
+      console.log('Station coordinates:', randomStation.coordinates);
       setCurrentStation(randomStation);
     }
   }, [randomStation]);

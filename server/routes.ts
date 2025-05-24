@@ -82,14 +82,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Station not found" });
       }
 
+      console.log(`Processing guess for station: ${station.name} (ID: ${stationId})`);
+      console.log(`Station coordinates from storage:`, station.coordinates);
+
       const stationCoords = station.coordinates as [number, number];
       const stationLat = stationCoords[1];
       const stationLng = stationCoords[0];
+
+      console.log(`Using station coordinates: lat=${stationLat}, lng=${stationLng}`);
+      console.log(`User guess coordinates: lat=${userLat}, lng=${userLng}`);
 
       // Calculate distance using Haversine formula
       const distance = calculateDistance(userLat, userLng, stationLat, stationLng);
       
       const isWin = distance <= 500;
+      
+      console.log(`Calculated distance: ${distance}m, isWin: ${isWin}`);
       
       res.json({
         distance: Math.round(distance),
