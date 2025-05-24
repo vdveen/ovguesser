@@ -73,10 +73,10 @@ export default function GameHeader({ stationName, attempts, stats, onNewGame, la
               <div className="mb-3">
                 <span className="text-xs text-slate-600">Attempts:</span>
                 <div className="text-lg font-bold" style={{ 
-                  color: attempts <= 2 ? '#10b981' : 
-                         attempts <= 4 ? '#f59e0b' : '#ef4444' 
+                  color: (attempts - 1) <= 2 ? '#10b981' : 
+                         (attempts - 1) <= 4 ? '#f59e0b' : '#ef4444' 
                 }}>
-                  {attempts}
+                  {attempts - 1}
                 </div>
               </div>
 
