@@ -12,7 +12,7 @@ interface GameHeaderProps {
 
 export default function GameHeader({ stationName, attempts, stats, onNewGame }: GameHeaderProps) {
   return (
-    <div className="absolute top-4 left-4 right-4 z-50 md:left-6 md:right-auto md:top-6">
+    <div className="absolute top-4 left-4 right-4 z-[1000] md:left-6 md:right-auto md:top-6">
       <Card className="bg-white/95 backdrop-blur-sm border border-slate-200 shadow-lg max-w-md">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center gap-3 mb-3">
