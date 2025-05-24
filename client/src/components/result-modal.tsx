@@ -1,15 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Target, RotateCcw, SkipForward, X } from "lucide-react";
+import { Target, RotateCcw, SkipForward, X, Eye } from "lucide-react";
 
 interface ResultModalProps {
   distance: number;
   onTryAgain: () => void;
   onNewGame: () => void;
+  onRevealLocation: () => void;
   onClose: () => void;
 }
 
-export default function ResultModal({ distance, onTryAgain, onNewGame, onClose }: ResultModalProps) {
+export default function ResultModal({ distance, onTryAgain, onNewGame, onRevealLocation, onClose }: ResultModalProps) {
   const distanceKm = distance / 1000;
   const displayDistance = distance > 1000 
     ? `${distanceKm.toFixed(1)} km` 
@@ -98,11 +99,20 @@ export default function ResultModal({ distance, onTryAgain, onNewGame, onClose }
             </Button>
             
             <Button 
+              onClick={onRevealLocation}
+              variant="outline"
+              className="border-orange-200 text-orange-700 hover:bg-orange-50"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Reveal Location
+            </Button>
+            
+            <Button 
               onClick={onNewGame}
               variant="outline"
             >
               <SkipForward className="w-4 h-4 mr-2" />
-              New Station
+              Skip Station
             </Button>
           </div>
         </CardContent>
