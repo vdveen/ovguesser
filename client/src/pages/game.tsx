@@ -19,6 +19,13 @@ interface GuessResult {
   attempt: number;
 }
 
+interface PreviousGuess {
+  lat: number;
+  lng: number;
+  distance: number;
+  attempt: number;
+}
+
 export default function Game() {
   const [currentStation, setCurrentStation] = useState<TrainStation | null>(null);
   const [attempts, setAttempts] = useState(1);
@@ -28,6 +35,7 @@ export default function Game() {
   const [userMarkerPosition, setUserMarkerPosition] = useState<{lat: number, lng: number} | null>(null);
   const [stationMarkerPosition, setStationMarkerPosition] = useState<{lat: number, lng: number} | null>(null);
   const [locationRevealed, setLocationRevealed] = useState(false);
+  const [previousGuesses, setPreviousGuesses] = useState<PreviousGuess[]>([]);
 
   // Fetch game statistics
   const { data: stats } = useQuery({
@@ -49,6 +57,16 @@ export default function Game() {
     },
     onSuccess: (result: GuessResult) => {
       setLastGuess(result);
+      
+      // Add current guess to previous guesses if not winning
+      if (!result.isWin && userMarkerPosition) {
+        setPreviousGuesses(prev => [...prev, {
+          lat: userMarkerPosition.lat,
+          lng: userMarkerPosition.lng,
+          distance: result.distance,
+          attempt: result.attempt
+        }]);
+      }
       
       if (result.isWin) {
         setStationMarkerPosition(result.stationLocation);
@@ -81,6 +99,7 @@ export default function Game() {
     setUserMarkerPosition(null);
     setStationMarkerPosition(null);
     setLocationRevealed(false);
+    setPreviousGuesses([]);
     
     const result = await fetchNewStation();
     if (result.data) {
@@ -185,6 +204,7 @@ export default function Game() {
         onMapClick={handleMapClick}
         userMarker={userMarkerPosition}
         stationMarker={stationMarkerPosition}
+        previousGuesses={previousGuesses}
         isLoading={guessMutation.isPending}
       />
 
