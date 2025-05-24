@@ -25,11 +25,17 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, previou
   const userMarkerRef = useRef<any>(null);
   const stationMarkerRef = useRef<any>(null);
   const previousGuessMarkersRef = useRef<any[]>([]);
+  const onMapClickRef = useRef(onMapClick);
+  const isLoadingRef = useRef(isLoading);
 
-  // Initialize map
+  // Keep refs updated
+  onMapClickRef.current = onMapClick;
+  isLoadingRef.current = isLoading;
+
+  // Initialize map (only once)
   useEffect(() => {
     const initMap = async () => {
-      if (typeof window === "undefined" || !mapRef.current) return;
+      if (typeof window === "undefined" || !mapRef.current || mapInstanceRef.current) return;
       
       // Dynamically import Leaflet
       if (!L) {
@@ -64,8 +70,8 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, previou
 
       // Handle map clicks
       mapInstanceRef.current.on('click', (e: any) => {
-        if (!isLoading) {
-          onMapClick(e.latlng.lat, e.latlng.lng);
+        if (!isLoadingRef.current) {
+          onMapClickRef.current(e.latlng.lat, e.latlng.lng);
         }
       });
     };
@@ -78,7 +84,7 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, previou
         mapInstanceRef.current = null;
       }
     };
-  }, []);
+  }, []); // Empty dependency array - only run once
 
   // Update user marker
   useEffect(() => {
