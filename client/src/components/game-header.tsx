@@ -15,11 +15,10 @@ interface GameHeaderProps {
   stats?: GameStats;
   onNewGame: () => void;
   lastResult?: GameResult | null;
-  onTryAgain?: () => void;
   onRevealLocation?: () => void;
 }
 
-export default function GameHeader({ stationName, attempts, stats, onNewGame, lastResult, onTryAgain, onRevealLocation }: GameHeaderProps) {
+export default function GameHeader({ stationName, attempts, stats, onNewGame, lastResult, onRevealLocation }: GameHeaderProps) {
   const displayDistance = lastResult ? formatDistance(lastResult.distance) : null;
   const resultInfo = lastResult ? getAccuracyRating(lastResult.distance) : null;
 
@@ -82,20 +81,12 @@ export default function GameHeader({ stationName, attempts, stats, onNewGame, la
               </div>
 
               {/* Button row */}
-              {!lastResult.isWin && (
-                <div className="flex gap-2">
-                  {onTryAgain && (
-                    <Button size="sm" variant="outline" onClick={onTryAgain} className="flex-1">
-                      <RotateCcw className="w-3 h-3 mr-1" />
-                      Try Again
-                    </Button>
-                  )}
-                  {onRevealLocation && (
-                    <Button size="sm" variant="outline" onClick={onRevealLocation} className="flex-1">
-                      <Eye className="w-3 h-3 mr-1" />
-                      Reveal
-                    </Button>
-                  )}
+              {!lastResult.isWin && onRevealLocation && (
+                <div className="flex justify-center">
+                  <Button size="sm" variant="outline" onClick={onRevealLocation}>
+                    <Eye className="w-3 h-3 mr-1" />
+                    Reveal Location
+                  </Button>
                 </div>
               )}
             </div>
