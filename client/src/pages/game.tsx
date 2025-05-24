@@ -108,10 +108,13 @@ export default function Game() {
     // Increment game ID to force new query
     setGameId(prev => prev + 1);
     
-    const result = await fetchNewStation();
-    if (result.data) {
-      setCurrentStation(result.data);
-    }
+    // Small delay to ensure state updates, then fetch new station
+    setTimeout(async () => {
+      const result = await fetchNewStation();
+      if (result.data) {
+        setCurrentStation(result.data);
+      }
+    }, 100);
   };
 
   // Handle map click
