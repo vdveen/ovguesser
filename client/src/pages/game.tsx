@@ -27,6 +27,7 @@ export default function Game() {
   const [lastGuess, setLastGuess] = useState<GuessResult | null>(null);
   const [userMarkerPosition, setUserMarkerPosition] = useState<{lat: number, lng: number} | null>(null);
   const [stationMarkerPosition, setStationMarkerPosition] = useState<{lat: number, lng: number} | null>(null);
+  const [locationRevealed, setLocationRevealed] = useState(false);
 
   // Fetch game statistics
   const { data: stats } = useQuery({
@@ -48,9 +49,10 @@ export default function Game() {
     },
     onSuccess: (result: GuessResult) => {
       setLastGuess(result);
-      setStationMarkerPosition(result.stationLocation);
       
       if (result.isWin) {
+        setStationMarkerPosition(result.stationLocation);
+        setLocationRevealed(true);
         setShowWin(true);
       } else {
         setShowResult(true);
@@ -78,6 +80,7 @@ export default function Game() {
     setAttempts(1);
     setUserMarkerPosition(null);
     setStationMarkerPosition(null);
+    setLocationRevealed(false);
     
     const result = await fetchNewStation();
     if (result.data) {
@@ -104,7 +107,19 @@ export default function Game() {
     setShowResult(false);
     setAttempts(prev => prev + 1);
     setUserMarkerPosition(null);
-    setStationMarkerPosition(null);
+    // Don't reset station marker if location is revealed
+    if (!locationRevealed) {
+      setStationMarkerPosition(null);
+    }
+  };
+
+  // Handle reveal location
+  const handleRevealLocation = () => {
+    if (lastGuess) {
+      setStationMarkerPosition(lastGuess.stationLocation);
+      setLocationRevealed(true);
+      setShowResult(false);
+    }
   };
 
   // Handle game completion
@@ -179,6 +194,7 @@ export default function Game() {
           distance={lastGuess.distance}
           onTryAgain={handleTryAgain}
           onNewGame={handleGameComplete}
+          onRevealLocation={handleRevealLocation}
           onClose={() => setShowResult(false)}
         />
       )}
