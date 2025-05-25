@@ -56,7 +56,7 @@ export default function GameHeader({
           {/* Station Display */}
           <div className="mb-4">
             <p className="text-sm text-slate-600 mb-3">
-              Find this train station:
+              Vind dit treinstation:
             </p>
             <div className="bg-blue-600 p-3 rounded-none relative flex items-center gap-3">
               <div className="w-5 h-5 bg-white flex-shrink-0 absolute top-0 left-0"></div>
@@ -78,7 +78,7 @@ export default function GameHeader({
                   <Target className="w-4 h-4 text-slate-500" />
                   <span className="text-sm font-medium text-slate-700">
                     {lastResult.isWin
-                      ? "🎯 Great guess!"
+                      ? "🎯 Geweldige gok!"
                       : resultInfo.description}
                   </span>
                 </div>
@@ -86,7 +86,7 @@ export default function GameHeader({
                 {/* Distance and Attempts side by side */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <span className="text-xs text-slate-600">Distance:</span>
+                    <span className="text-xs text-slate-600">Afstand:</span>
                     <div
                       className="text-lg font-bold"
                       style={{ color: resultInfo.color }}
@@ -95,7 +95,7 @@ export default function GameHeader({
                     </div>
                   </div>
                   <div>
-                    <span className="text-xs text-slate-600">Attempts:</span>
+                    <span className="text-xs text-slate-600">Pogingen:</span>
                     <div
                       className="text-lg font-bold"
                       style={{
@@ -121,13 +121,13 @@ export default function GameHeader({
                     <div className="flex items-center justify-center gap-2 text-blue-600">
                       <Crosshair className="w-4 h-4" />
                       <span className="text-sm font-medium">
-                        Click on the map to make your guess
+                        Klik op de kaart om je gok te doen
                       </span>
                     </div>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Click anywhere on the map to guess where this train station is located</p>
+                  <p>Klik ergens op de kaart om te raden waar dit treinstation zich bevindt</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -142,7 +142,7 @@ export default function GameHeader({
               className="flex-1"
             >
               <RotateCcw className="w-4 h-4 mr-1" />
-              Another Station
+              Ander Station
             </Button>
             {lastResult && !lastResult.isWin && onRevealLocation && (
               <Button
@@ -152,7 +152,7 @@ export default function GameHeader({
                 className="flex-1"
               >
                 <Eye className="w-3 h-3 mr-1" />
-                Reveal Location
+                Toon Locatie
               </Button>
             )}
           </div>
@@ -164,13 +164,13 @@ export default function GameHeader({
             <div className="hidden md:block pt-4 border-t border-slate-200">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <div className="text-slate-600">Games Played</div>
+                  <div className="text-slate-600">Gespeelde Spellen</div>
                   <div className="font-semibold text-slate-900">
                     {stats.totalGames}
                   </div>
                 </div>
                 <div>
-                  <div className="text-slate-600">Best Distance</div>
+                  <div className="text-slate-600">Beste Afstand</div>
                   <div className="font-semibold text-slate-900">
                     {stats.bestDistance
                       ? formatDistance(stats.bestDistance)
