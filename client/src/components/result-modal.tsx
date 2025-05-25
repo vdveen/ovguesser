@@ -20,16 +20,16 @@ export default function ResultModal({ distance, onTryAgain, onNewGame, onRevealL
     if (distance <= 500) {
       return {
         icon: "🎉",
-        title: "Excellent!",
-        message: "You found the station!",
+        title: "Uitstekend!",
+        message: "Je hebt het station gevonden!",
         color: "text-emerald-600",
         bgColor: "bg-emerald-100",
       };
     } else if (distance <= 2000) {
       return {
         icon: "🎯",
-        title: "Very Close!",
-        message: "You're getting warmer!",
+        title: "Heel Dichtbij!",
+        message: "Je komt warmer!",
         color: "text-amber-600",
         bgColor: "bg-amber-100",
       };
