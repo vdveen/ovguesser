@@ -181,6 +181,13 @@ export default function GameHeader({
               </div>
             </div>
           )}
+
+          {/* Attribution - hidden on mobile */}
+          <div className="hidden md:block  pt-4 text-center">
+            <p className="text-xs text-slate-300">
+              Gemaakt door Anne v/d Veen met Replit en Sonnet 4
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
