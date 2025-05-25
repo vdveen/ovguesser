@@ -167,7 +167,7 @@ export default function GameMap({
       // Add scale bar in a subtle way
       L.control
         .scale({
-          position: "bottomleft",
+          position: "bottomright",
           metric: true,
           imperial: false,
           maxWidth: 100,
