@@ -71,7 +71,7 @@ export default function GameHeader({
 
           {/* Result Display or Initial Tooltip */}
           {lastResult && resultInfo ? (
-            <div className="mb-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="hidden md:block mb-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
               {/* Icon/text row */}
               <div className="flex items-center gap-2 mb-2">
                 <Target className="w-4 h-4 text-slate-500" />
