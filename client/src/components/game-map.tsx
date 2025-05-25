@@ -69,13 +69,20 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, previou
       }).addTo(mapInstanceRef.current);
 
       // Add railway lines layer
-      L.geoJSON(railwayLinesData, {
-        style: {
-          color: '#d1d5db', // Light grey color
-          weight: 1, // Thin line width
-          opacity: 0.6, // Slightly transparent
-        }
-      }).addTo(mapInstanceRef.current);
+      fetch('/src/assets/spoorlijnen2.geojson')
+        .then(response => response.json())
+        .then(railwayData => {
+          L.geoJSON(railwayData, {
+            style: {
+              color: '#d1d5db', // Light grey color
+              weight: 1, // Thin line width
+              opacity: 0.6, // Slightly transparent
+            }
+          }).addTo(mapInstanceRef.current);
+        })
+        .catch(error => {
+          console.log('Railway lines data not available:', error);
+        });
 
       // Handle map clicks
       mapInstanceRef.current.on('click', (e: any) => {
