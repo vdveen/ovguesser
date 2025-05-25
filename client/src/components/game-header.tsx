@@ -45,8 +45,9 @@ export default function GameHeader({ stationName, attempts, stats, onNewGame, la
           {/* Station Display */}
           <div className="mb-4">
             <p className="text-sm text-slate-600 mb-1">Find this train station:</p>
-            <div className="bg-slate-100 p-3">
-              <span className="text-lg font-semibold text-slate-900">{stationName}</span>
+            <div className="bg-blue-600 p-3 rounded-none flex items-center gap-3">
+              <div className="w-6 h-6 bg-white rounded-sm flex-shrink-0"></div>
+              <span className="text-lg font-semibold text-white">{stationName}</span>
             </div>
           </div>
 
