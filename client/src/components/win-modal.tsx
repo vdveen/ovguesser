@@ -64,7 +64,7 @@ export function SessionCompleteModal({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-600">Totaal afstand:</span>
-              <span className="font-bold text-red-600">{Math.round(totalDistance)}m</span>
+              <span className="font-bold text-red-600">{Math.round(totalDistance / 1000)}km</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-600">Gem. pogingen:</span>
@@ -72,7 +72,7 @@ export function SessionCompleteModal({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-600">Gem. afstand:</span>
-              <span className="font-bold text-orange-600">{averageDistance}m</span>
+              <span className="font-bold text-orange-600">{Math.round(totalDistance / gamesCompleted / 1000)}km</span>
             </div>
           </div>
 
