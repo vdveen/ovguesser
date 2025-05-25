@@ -1,6 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Train,
   RotateCcw,
@@ -55,9 +60,7 @@ export default function GameHeader({
 
           {/* Station Display */}
           <div className="mb-4">
-            <p className="text-sm text-slate-600 mb-3">
-              Vind dit treinstation:
-            </p>
+            <p className="text-sm text-slate-600 mb-3">Waar ligt station...</p>
             <div className="bg-blue-600 p-3 rounded-none relative flex items-center gap-3">
               <div className="w-5 h-5 bg-white flex-shrink-0 absolute top-0 left-0"></div>
               <span className="text-lg font-semibold text-white ml-8">
@@ -121,13 +124,16 @@ export default function GameHeader({
                     <div className="flex items-center justify-center gap-2 text-blue-600">
                       <Crosshair className="w-4 h-4" />
                       <span className="text-sm font-medium">
-                        Klik op de kaart om je gok te doen
+                        Klik op de kaart om te gokken
                       </span>
                     </div>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Klik ergens op de kaart om te raden waar dit treinstation zich bevindt</p>
+                  <p>
+                    Klik ergens op de kaart om te raden waar dit treinstation
+                    zich bevindt
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -142,7 +148,7 @@ export default function GameHeader({
               className="flex-1"
             >
               <RotateCcw className="w-4 h-4 mr-1" />
-              Ander Station
+              Ander station
             </Button>
             {lastResult && !lastResult.isWin && onRevealLocation && (
               <Button
@@ -152,7 +158,7 @@ export default function GameHeader({
                 className="flex-1"
               >
                 <Eye className="w-3 h-3 mr-1" />
-                Toon Locatie
+                Onthul locatie
               </Button>
             )}
           </div>
@@ -164,17 +170,17 @@ export default function GameHeader({
             <div className="hidden md:block pt-4 border-t border-slate-200">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <div className="text-slate-600">Gespeelde Spellen</div>
+                  <div className="text-slate-600">Stations geraden</div>
                   <div className="font-semibold text-slate-900">
                     {stats.totalGames}
                   </div>
                 </div>
                 <div>
-                  <div className="text-slate-600">Beste Afstand</div>
+                  <div className="text-slate-600">Laagste afstand</div>
                   <div className="font-semibold text-slate-900">
                     {stats.bestDistance
                       ? formatDistance(stats.bestDistance)
-                      : "—"}
+                      : "∞"}
                   </div>
                 </div>
               </div>
