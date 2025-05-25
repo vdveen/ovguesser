@@ -50,15 +50,6 @@ export default function GameHeader({
             <h1 className="text-xl md:text-2xl font-bold text-slate-900">
               OVGuesser
             </h1>
-            <Button
-              onClick={onNewGame}
-              variant="outline"
-              size="sm"
-              className="ml-auto"
-            >
-              <RotateCcw className="w-4 h-4 mr-1" />
-              New
-            </Button>
           </div>
 
           {/* Station Display */}
@@ -121,21 +112,32 @@ export default function GameHeader({
                 </div>
               </div>
 
-              {/* Button below result block */}
-              {!lastResult.isWin && onRevealLocation && (
-                <div className="flex justify-center mb-4">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onRevealLocation}
-                  >
-                    <Eye className="w-3 h-3 mr-1" />
-                    Reveal Location
-                  </Button>
-                </div>
-              )}
-            </>
+              </>
           )}
+
+          {/* Button Row */}
+          <div className="flex gap-2 mb-4">
+            <Button
+              onClick={onNewGame}
+              variant="outline"
+              size="sm"
+              className="flex-1"
+            >
+              <RotateCcw className="w-4 h-4 mr-1" />
+              New
+            </Button>
+            {lastResult && !lastResult.isWin && onRevealLocation && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onRevealLocation}
+                className="flex-1"
+              >
+                <Eye className="w-3 h-3 mr-1" />
+                Reveal Location
+              </Button>
+            )}
+          </div>
 
           {/* Game Stats */}
 
