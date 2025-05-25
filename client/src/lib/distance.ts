@@ -52,14 +52,14 @@ export function getAccuracyRating(distance: number) {
   } else if (distance <= 2000) {
     return {
       rating: "Very Good",
-      color: "amber",
+      color: "yellow",
       description: "Very close!",
     };
-  } else if (distance <= 10000) {
+  } else if (distance <= 15000) {
     return {
       rating: "Good",
-      color: "orange",
-      description: "Getting closer!",
+      color: "amber",
+      description: "Getting close",
     };
   } else {
     return {

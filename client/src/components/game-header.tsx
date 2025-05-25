@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Train,
   RotateCcw,
@@ -65,8 +66,8 @@ export default function GameHeader({
             </div>
           </div>
 
-          {/* Result Display */}
-          {lastResult && resultInfo && (
+          {/* Result Display or Initial Tooltip */}
+          {lastResult && resultInfo ? (
             <>
               <div
                 className="mb-3 p-2 bg-slate-50 rounded-lg border-l-4"
@@ -112,6 +113,24 @@ export default function GameHeader({
                 </div>
               </div>
             </>
+          ) : (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200 text-center cursor-help">
+                    <div className="flex items-center justify-center gap-2 text-blue-600">
+                      <Crosshair className="w-4 h-4" />
+                      <span className="text-sm font-medium">
+                        Click on the map to make your guess
+                      </span>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Click anywhere on the map to guess where this train station is located</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
 
           {/* Button Row */}
