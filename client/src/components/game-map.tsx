@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+
+import { useEffect, useRef, useCallback, useMemo } from "react";
 import { MapPin, Loader2 } from "lucide-react";
 
 // Import Leaflet dynamically to avoid SSR issues
@@ -19,18 +20,92 @@ interface GameMapProps {
   isLoading?: boolean;
 }
 
+// Cache the GeoJSON data to avoid re-fetching
+let cachedRailwayData: any = null;
+let railwayDataPromise: Promise<any> | null = null;
+
+const loadRailwayData = async () => {
+  if (cachedRailwayData) {
+    return cachedRailwayData;
+  }
+  
+  if (railwayDataPromise) {
+    return railwayDataPromise;
+  }
+  
+  railwayDataPromise = fetch('/src/assets/spoorlijnen2.geojson')
+    .then(response => response.json())
+    .then(data => {
+      cachedRailwayData = data;
+      railwayDataPromise = null;
+      return data;
+    })
+    .catch(error => {
+      railwayDataPromise = null;
+      console.log('Railway lines data not available:', error);
+      return null;
+    });
+    
+  return railwayDataPromise;
+};
+
 export default function GameMap({ onMapClick, userMarker, stationMarker, previousGuesses = [], isLoading }: GameMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
   const stationMarkerRef = useRef<any>(null);
   const previousGuessMarkersRef = useRef<any[]>([]);
+  const railwayLayerRef = useRef<any>(null);
   const onMapClickRef = useRef(onMapClick);
   const isLoadingRef = useRef(isLoading);
 
-  // Keep refs updated
+  // Keep refs updated without triggering re-renders
   onMapClickRef.current = onMapClick;
   isLoadingRef.current = isLoading;
+
+  // Memoize marker creation functions
+  const createUserMarker = useCallback((lat: number, lng: number) => {
+    if (!L) return null;
+    return L.marker([lat, lng], {
+      icon: L.divIcon({
+        className: 'custom-marker',
+        html: '<div style="background: #ef4444; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+      })
+    });
+  }, []);
+
+  const createStationMarker = useCallback((lat: number, lng: number) => {
+    if (!L) return null;
+    return L.marker([lat, lng], {
+      icon: L.divIcon({
+        className: 'station-marker',
+        html: '<div style="background: #10b981; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+      })
+    });
+  }, []);
+
+  const createPreviousGuessMarker = useCallback((guess: PreviousGuess) => {
+    if (!L) return null;
+    const distanceKm = guess.distance > 1000 
+      ? `${(guess.distance / 1000).toFixed(1)}km` 
+      : `${Math.round(guess.distance)}m`;
+    
+    return L.marker([guess.lat, guess.lng], {
+      icon: L.divIcon({
+        className: 'previous-guess-marker',
+        html: `
+          <div style="background: #f59e0b; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);"></div>
+          <div style="position: absolute; top: 22px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap; pointer-events: none;">${distanceKm}</div>
+        `,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      })
+    });
+  }, []);
 
   // Initialize map (only once)
   useEffect(() => {
@@ -54,6 +129,7 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, previou
       mapInstanceRef.current = L.map(mapRef.current, {
         zoomControl: false,
         attributionControl: false,
+        preferCanvas: true, // Use canvas for better performance
       }).setView([52.1326, 5.2913], 7);
 
       // Add base layer without labels (CartoDB Positron without labels)
@@ -68,21 +144,21 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, previou
         position: 'bottomright'
       }).addTo(mapInstanceRef.current);
 
-      // Add railway lines layer
-      fetch('/src/assets/spoorlijnen2.geojson')
-        .then(response => response.json())
-        .then(railwayData => {
-          L.geoJSON(railwayData, {
+      // Load and add railway lines layer (cached)
+      try {
+        const railwayData = await loadRailwayData();
+        if (railwayData && mapInstanceRef.current) {
+          railwayLayerRef.current = L.geoJSON(railwayData, {
             style: {
               color: '#6b7280', // Darker grey color
               weight: 1, // Thin line width
               opacity: 0.6, // Slightly transparent
             }
           }).addTo(mapInstanceRef.current);
-        })
-        .catch(error => {
-          console.log('Railway lines data not available:', error);
-        });
+        }
+      } catch (error) {
+        console.log('Failed to load railway data:', error);
+      }
 
       // Handle map clicks
       mapInstanceRef.current.on('click', (e: any) => {
@@ -94,15 +170,20 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, previou
 
     initMap();
 
+    // Only cleanup when component unmounts, not on every re-render
     return () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
+        railwayLayerRef.current = null;
+        userMarkerRef.current = null;
+        stationMarkerRef.current = null;
+        previousGuessMarkersRef.current = [];
       }
     };
   }, []); // Empty dependency array - only run once
 
-  // Update user marker
+  // Update user marker efficiently
   useEffect(() => {
     if (!mapInstanceRef.current || !L) return;
 
@@ -114,18 +195,14 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, previou
 
     // Add new user marker
     if (userMarker) {
-      userMarkerRef.current = L.marker([userMarker.lat, userMarker.lng], {
-        icon: L.divIcon({
-          className: 'custom-marker',
-          html: '<div style="background: #ef4444; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
-          iconSize: [20, 20],
-          iconAnchor: [10, 10],
-        })
-      }).addTo(mapInstanceRef.current);
+      userMarkerRef.current = createUserMarker(userMarker.lat, userMarker.lng);
+      if (userMarkerRef.current) {
+        userMarkerRef.current.addTo(mapInstanceRef.current);
+      }
     }
-  }, [userMarker]);
+  }, [userMarker, createUserMarker]);
 
-  // Update station marker
+  // Update station marker efficiently
   useEffect(() => {
     if (!mapInstanceRef.current || !L) return;
 
@@ -137,18 +214,14 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, previou
 
     // Add new station marker
     if (stationMarker) {
-      stationMarkerRef.current = L.marker([stationMarker.lat, stationMarker.lng], {
-        icon: L.divIcon({
-          className: 'station-marker',
-          html: '<div style="background: #10b981; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
-        })
-      }).addTo(mapInstanceRef.current);
+      stationMarkerRef.current = createStationMarker(stationMarker.lat, stationMarker.lng);
+      if (stationMarkerRef.current) {
+        stationMarkerRef.current.addTo(mapInstanceRef.current);
+      }
     }
-  }, [stationMarker]);
+  }, [stationMarker, createStationMarker]);
 
-  // Update previous guess markers
+  // Update previous guess markers efficiently
   useEffect(() => {
     if (!mapInstanceRef.current || !L) return;
 
@@ -161,26 +234,34 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, previou
     previousGuessMarkersRef.current = [];
 
     // Add new previous guess markers
-    previousGuesses.forEach((guess, index) => {
-      const distanceKm = guess.distance > 1000 
-        ? `${(guess.distance / 1000).toFixed(1)}km` 
-        : `${Math.round(guess.distance)}m`;
-      
-      const marker = L.marker([guess.lat, guess.lng], {
-        icon: L.divIcon({
-          className: 'previous-guess-marker',
-          html: `
-            <div style="background: #f59e0b; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.2);"></div>
-            <div style="position: absolute; top: 22px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap; pointer-events: none;">${distanceKm}</div>
-          `,
-          iconSize: [18, 18],
-          iconAnchor: [9, 9],
-        })
-      }).addTo(mapInstanceRef.current);
-      
-      previousGuessMarkersRef.current.push(marker);
+    previousGuesses.forEach((guess) => {
+      const marker = createPreviousGuessMarker(guess);
+      if (marker) {
+        marker.addTo(mapInstanceRef.current);
+        previousGuessMarkersRef.current.push(marker);
+      }
     });
-  }, [previousGuesses]);
+  }, [previousGuesses, createPreviousGuessMarker]);
+
+  // Memoize the legend component to prevent unnecessary re-renders
+  const legend = useMemo(() => (
+    <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 text-xs z-[999]">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-red-500 rounded-full border border-white shadow-sm"></div>
+          <span className="text-slate-600">Current guess</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-amber-500 rounded-full border border-white shadow-sm"></div>
+          <span className="text-slate-600">Previous guesses</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-emerald-500 rounded-full border border-white shadow-sm"></div>
+          <span className="text-slate-600">Actual location</span>
+        </div>
+      </div>
+    </div>
+  ), []);
 
   return (
     <div className="relative w-full h-full">
@@ -196,23 +277,8 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, previou
         </div>
       )}
 
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 text-xs z-[999]">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-red-500 rounded-full border border-white shadow-sm"></div>
-            <span className="text-slate-600">Current guess</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-amber-500 rounded-full border border-white shadow-sm"></div>
-            <span className="text-slate-600">Previous guesses</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-emerald-500 rounded-full border border-white shadow-sm"></div>
-            <span className="text-slate-600">Actual location</span>
-          </div>
-        </div>
-      </div>
+      {/* Memoized Legend */}
+      {legend}
     </div>
   );
 }
