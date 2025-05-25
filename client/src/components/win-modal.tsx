@@ -10,10 +10,16 @@ interface WinModalProps {
   onClose: () => void;
 }
 
-export default function WinModal({ stationName, finalDistance, attempts, onNewGame, onClose }: WinModalProps) {
+export default function WinModal({
+  stationName,
+  finalDistance,
+  attempts,
+  onNewGame,
+  onClose,
+}: WinModalProps) {
   const handleShare = async () => {
-    const text = `Ik heb ${stationName} gevonden in ${attempts} pogingen op OVGuesser! 🚂 Eindafstand: ${finalDistance}m`;
-    
+    const text = `Ik heb ${stationName} gevonden in ${attempts} pogingen en ${finalDistance}m op OVGuesser.nl! 🚂`;
+
     if (navigator.share) {
       try {
         await navigator.share({ text });
@@ -42,22 +48,26 @@ export default function WinModal({ stationName, finalDistance, attempts, onNewGa
               <X className="h-4 w-4" />
             </Button>
           </div>
-          
+
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Trophy className="w-8 h-8 text-emerald-600" />
           </div>
-          
-          <CardTitle className="text-2xl text-slate-900 mb-2">Uitstekend!</CardTitle>
+
+          <CardTitle className="text-2xl text-slate-900 mb-2">
+            Uitstekend!
+          </CardTitle>
           <p className="text-slate-600">
             Je hebt <span className="font-medium">{stationName}</span> gevonden
           </p>
         </CardHeader>
-        
+
         <CardContent>
           <div className="bg-slate-50 rounded-lg p-4 mb-6 space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-slate-600">Eindafstand:</span>
-              <span className="font-bold text-emerald-600">{finalDistance}m</span>
+              <span className="text-slate-600">Afstand:</span>
+              <span className="font-bold text-emerald-600">
+                {finalDistance}m
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-600">Pogingen:</span>
@@ -66,18 +76,15 @@ export default function WinModal({ stationName, finalDistance, attempts, onNewGa
           </div>
 
           <div className="flex flex-col gap-3">
-            <Button 
+            <Button
               onClick={onNewGame}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Play className="w-4 h-4 mr-2" />
               Volgend Station
             </Button>
-            
-            <Button 
-              onClick={handleShare}
-              variant="outline"
-            >
+
+            <Button onClick={handleShare} variant="outline">
               <Share className="w-4 h-4 mr-2" />
               Deel Resultaat
             </Button>
