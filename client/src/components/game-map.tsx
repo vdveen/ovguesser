@@ -32,7 +32,7 @@ const loadRailwayData = async () => {
     return railwayDataPromise;
   }
 
-  railwayDataPromise = fetch("/src/assets/spoorlijnen2.geojson")
+  railwayDataPromise = fetch("/spoorlijnen2.geojson")
     .then((response) => response.json())
     .then((data) => {
       cachedRailwayData = data;
