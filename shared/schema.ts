@@ -22,6 +22,8 @@ export const gameResults = pgTable("game_results", {
   stationId: integer("station_id").references(() => trainStations.id),
   attempts: integer("attempts").notNull(),
   finalDistance: real("final_distance").notNull(), // in meters
+  totalRoundDistance: real("total_round_distance").notNull().default(0), // total of all attempts in this round
+  score: integer("score").notNull().default(0), // calculated score for this round
   completed: integer("completed").notNull().default(0), // boolean as integer
 });
 
@@ -30,6 +32,7 @@ export const gameSessions = pgTable("game_sessions", {
   totalAttempts: integer("total_attempts").notNull().default(0),
   totalDistance: real("total_distance").notNull().default(0), // sum of all attempts distances
   gamesCompleted: integer("games_completed").notNull().default(0),
+  totalScore: integer("total_score").notNull().default(0), // total score across all games
   isCompleted: integer("is_completed").notNull().default(0), // boolean as integer
 });
 

@@ -13,6 +13,7 @@ interface WinModalProps {
 interface SessionCompleteModalProps {
   totalAttempts: number;
   totalDistance: number;
+  totalScore: number;
   gamesCompleted: number;
   onNewSession: () => void;
   onClose: () => void;
@@ -21,12 +22,13 @@ interface SessionCompleteModalProps {
 export function SessionCompleteModal({
   totalAttempts,
   totalDistance,
+  totalScore,
   gamesCompleted,
   onNewSession,
   onClose,
 }: SessionCompleteModalProps) {
   const averageAttempts = (totalAttempts / gamesCompleted).toFixed(1);
-  const averageDistance = (totalDistance / gamesCompleted).toFixed(0);
+  const averageScore = Math.round(totalScore / gamesCompleted);
 
   return (
     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[1001] p-4">
@@ -58,6 +60,14 @@ export function SessionCompleteModal({
 
         <CardContent>
           <div className="bg-slate-50 rounded-lg p-4 mb-6 space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-600">Totaal score:</span>
+              <span className="font-bold text-purple-600 text-lg">{totalScore.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-600">Gem. score:</span>
+              <span className="font-bold text-purple-500">{averageScore.toLocaleString()}</span>
+            </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-600">Totaal pogingen:</span>
               <span className="font-bold text-blue-600">{totalAttempts}</span>

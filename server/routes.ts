@@ -84,7 +84,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/guess", async (req, res) => {
     try {
       const { stationId, userLat, userLng, attempt, sessionId } = gameSessionAttemptSchema.parse(req.body);
-      
+
       const station = await storage.getStationById(stationId);
       if (!station) {
         return res.status(404).json({ error: "Station not found" });
@@ -102,9 +102,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Calculate distance using Haversine formula
       const distance = calculateDistance(userLat, userLng, stationLat, stationLng);
-      
+
       const isWin = distance <= 500;
-      
+
       console.log(`Calculated distance: ${distance}m, isWin: ${isWin}`);
 
       // Update session with this attempt
@@ -115,7 +115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalDistance: session.totalDistance + distance,
         });
       }
-      
+
       res.json({
         distance: Math.round(distance),
         isWin,
@@ -136,28 +136,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Save game result
   app.post("/api/game-result", async (req, res) => {
     try {
-      const resultData = gameResultSchema.parse(req.body);
-      const result = await storage.createGameResult(resultData);
-      
-      // Update game statistics
-      const stats = await storage.getGameStats();
-      const newTotalGames = (stats?.totalGames || 0) + 1;
-      const newTotalAttempts = (stats?.totalAttempts || 0) + resultData.attempts;
-      const newBestDistance = stats?.bestDistance 
-        ? Math.min(stats.bestDistance, resultData.finalDistance)
-        : resultData.finalDistance;
-      
-      await storage.updateGameStats({
-        totalGames: newTotalGames,
-        totalAttempts: newTotalAttempts,
-        bestDistance: newBestDistance,
-        averageDistance: newTotalAttempts / newTotalGames,
-      });
+      const { stationId, attempts, finalDistance, totalRoundDistance, completed } = req.body;
 
-      res.json(result);
+      // Calculate score for this round
+      const score = storage.calculateRoundScore(attempts, totalRoundDistance);
+
+      const result = {
+        stationId,
+        attempts,
+        finalDistance,
+        totalRoundDistance,
+        score,
+        completed
+      };
+
+      await storage.saveGameResult(result);
+
+      // Update global stats
+      await storage.incrementGameStats(result.attempts, result.finalDistance, result.completed === 1);
+
+      res.json({ success: true, score });
     } catch (error) {
+      console.error('Failed to save game result:', error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid result data", details: error.errors });
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
       }
       res.status(500).json({ error: "Failed to save game result" });
     }
@@ -208,23 +210,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/session/:id/complete-game", async (req, res) => {
     try {
       const sessionId = parseInt(req.params.id);
+      const { roundScore } = req.body;
       const session = await storage.getCurrentGameSession();
-      
+
       if (!session || session.id !== sessionId) {
         return res.status(404).json({ error: "Session not found" });
       }
 
       const updatedSession = await storage.updateGameSession(sessionId, {
         gamesCompleted: session.gamesCompleted + 1,
+        totalScore: session.totalScore + (roundScore || 0),
+        isCompleted: session.gamesCompleted + 1 >= 5
       });
-
-      // Check if session is complete (5 games)
-      if (updatedSession.gamesCompleted >= 5) {
-        await storage.completeGameSession(sessionId);
-      }
 
       res.json(updatedSession);
     } catch (error) {
+      console.error('Failed to complete game in session:', error);
       res.status(500).json({ error: "Failed to complete game in session" });
     }
   });

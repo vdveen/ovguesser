@@ -35,6 +35,7 @@ interface GameHeaderProps {
     total: number;
     totalAttempts: number;
     totalDistance: number;
+    totalScore: number;
   };
 }
 
@@ -65,9 +66,10 @@ export default function GameHeader({
                 OVGuesser
               </h1>
               {sessionProgress && (
-                <p className="text-xs text-slate-600">
-                  Best of 5 - Spel {sessionProgress.current}/5
-                </p>
+                <div className="text-xs text-slate-600">
+                  <p>Best of 5 - Spel {sessionProgress.current}/5</p>
+                  <p className="text-purple-600 font-medium">Score: {sessionProgress.totalScore.toLocaleString()}</p>
+                </div>
               )}
             </div>
           </div>

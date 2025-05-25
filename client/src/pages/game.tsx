@@ -38,6 +38,8 @@ export default function Game() {
   const [previousGuesses, setPreviousGuesses] = useState<PreviousGuess[]>([]);
   const [currentSession, setCurrentSession] = useState<GameSession | null>(null);
   const [showSessionComplete, setShowSessionComplete] = useState(false);
+  const [currentRoundDistance, setCurrentRoundDistance] = useState(0);
+  const [currentRoundScore, setCurrentRoundScore] = useState<number | null>(null);
 
   // Fetch game statistics
   const { data: stats } = useQuery({
@@ -73,6 +75,9 @@ export default function Game() {
     onSuccess: (result: GuessResult) => {
       setLastGuess(result);
       
+      // Update round distance
+      setCurrentRoundDistance(prev => prev + result.distance);
+      
       // Add current guess to previous guesses if not winning
       if (!result.isWin && userMarkerPosition) {
         setPreviousGuesses(prev => [...prev, {
@@ -98,11 +103,12 @@ export default function Game() {
 
   // Save game result mutation
   const saveResultMutation = useMutation({
-    mutationFn: async (data: { stationId: number; attempts: number; finalDistance: number; completed: number }) => {
+    mutationFn: async (data: { stationId: number; attempts: number; finalDistance: number; totalRoundDistance: number; completed: number }) => {
       const response = await apiRequest("POST", "/api/game-result", data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      setCurrentRoundScore(result.score);
       // Invalidate stats to refresh them
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },
@@ -121,8 +127,8 @@ export default function Game() {
 
   // Complete game in session mutation
   const completeGameMutation = useMutation({
-    mutationFn: async (sessionId: number) => {
-      const response = await apiRequest("POST", `/api/session/${sessionId}/complete-game`);
+    mutationFn: async (data: { sessionId: number; roundScore: number }) => {
+      const response = await apiRequest("POST", `/api/session/${data.sessionId}/complete-game`, { roundScore: data.roundScore });
       return response.json();
     },
     onSuccess: (session) => {
@@ -144,6 +150,8 @@ export default function Game() {
     setLocationRevealed(false);
     setPreviousGuesses([]);
     setCurrentStation(null); // Clear current station immediately
+    setCurrentRoundDistance(0);
+    setCurrentRoundScore(null);
     
     console.log('Starting new game...');
     
@@ -198,15 +206,22 @@ export default function Game() {
   // Handle game completion
   const handleGameComplete = () => {
     if (currentStation && lastGuess && currentSession) {
+      const totalRoundDistance = currentRoundDistance + lastGuess.distance;
+      
       saveResultMutation.mutate({
         stationId: currentStation.id,
         attempts,
         finalDistance: lastGuess.distance,
+        totalRoundDistance,
         completed: lastGuess.isWin ? 1 : 0,
       });
       
-      // Complete game in session
-      completeGameMutation.mutate(currentSession.id);
+      // Wait for score calculation, then complete game in session
+      setTimeout(() => {
+        if (currentRoundScore !== null) {
+          completeGameMutation.mutate({ sessionId: currentSession.id, roundScore: currentRoundScore });
+        }
+      }, 100);
     }
     
     // Only start new game if session isn't complete
@@ -257,7 +272,8 @@ export default function Game() {
           current: currentSession.gamesCompleted + 1,
           total: 5,
           totalAttempts: currentSession.totalAttempts,
-          totalDistance: currentSession.totalDistance
+          totalDistance: currentSession.totalDistance,
+          totalScore: currentSession.totalScore
         } : undefined}
       />
 
@@ -288,6 +304,7 @@ export default function Game() {
         <SessionCompleteModal
           totalAttempts={currentSession.totalAttempts}
           totalDistance={currentSession.totalDistance}
+          totalScore={currentSession.totalScore}
           gamesCompleted={currentSession.gamesCompleted}
           onNewSession={startNewSession}
           onClose={() => setShowSessionComplete(false)}
