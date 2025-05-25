@@ -135,6 +135,9 @@ export default function Game() {
       setCurrentSession(session);
       if (session.gamesCompleted >= 5) {
         setShowSessionComplete(true);
+      } else {
+        // Continue to next game if session isn't complete
+        startNewGame();
       }
     },
   });
@@ -224,10 +227,7 @@ export default function Game() {
       }, 100);
     }
     
-    // Only start new game if session isn't complete
-    if (!currentSession || currentSession.gamesCompleted < 4) {
-      startNewGame();
-    }
+    // Don't automatically start new game - let the session complete handler manage this
   };
 
   // Initialize first game

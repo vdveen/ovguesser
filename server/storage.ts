@@ -165,8 +165,8 @@ export class MemStorage implements IStorage {
     return completedSession;
   }
 
-  async saveGameResult(result: InsertGameResult) {
-    await this.db.insert(gameResults).values(result);
+  async saveGameResult(result: InsertGameResult): Promise<GameResult> {
+    return await this.createGameResult(result);
   }
 
   calculateRoundScore(attempts: number, totalRoundDistance: number): number {
