@@ -71,59 +71,46 @@ export default function GameHeader({
 
           {/* Result Display or Initial Tooltip */}
           {lastResult && resultInfo ? (
-            <>
-              <div
-                className="mb-3 p-2 bg-slate-50 rounded-lg border-2"
-                style={{ 
-                  borderImage: `linear-gradient(to right, ${resultInfo.color}, ${
-                    attempts - 1 <= 2
-                      ? "#10b981"
-                      : attempts - 1 <= 4
-                        ? "#f59e0b"
-                        : "#ef4444"
-                  }) 1`
-                }}
-              ></div>
-                {/* Icon/text row */}
-                <div className="flex items-center gap-2 mb-2">
-                  <Target className="w-4 h-4 text-slate-500" />
-                  <span className="text-sm font-medium text-slate-700">
-                    {lastResult.isWin
-                      ? "🎯 Geweldige gok!"
-                      : resultInfo.description}
-                  </span>
-                </div>
+            <div className="mb-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+              {/* Icon/text row */}
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="w-4 h-4 text-slate-500" />
+                <span className="text-sm font-medium text-slate-700">
+                  {lastResult.isWin
+                    ? "🎯 Geweldige gok!"
+                    : resultInfo.description}
+                </span>
+              </div>
 
-                {/* Distance and Attempts side by side */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-xs text-slate-600">Afstand:</span>
-                    <div
-                      className="text-lg font-bold"
-                      style={{ color: resultInfo.color }}
-                    >
-                      {displayDistance}
-                    </div>
+              {/* Distance and Attempts side by side */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-xs text-slate-600">Afstand:</span>
+                  <div
+                    className="text-lg font-bold"
+                    style={{ color: resultInfo.color }}
+                  >
+                    {displayDistance}
                   </div>
-                  <div>
-                    <span className="text-xs text-slate-600">Pogingen:</span>
-                    <div
-                      className="text-lg font-bold"
-                      style={{
-                        color:
-                          attempts - 1 <= 2
-                            ? "#10b981"
-                            : attempts - 1 <= 4
-                              ? "#f59e0b"
-                              : "#ef4444",
-                      }}
-                    >
-                      {attempts - 1}
-                    </div>
+                </div>
+                <div>
+                  <span className="text-xs text-slate-600">Pogingen:</span>
+                  <div
+                    className="text-lg font-bold"
+                    style={{
+                      color:
+                        attempts - 1 <= 2
+                          ? "#10b981"
+                          : attempts - 1 <= 4
+                            ? "#f59e0b"
+                            : "#ef4444",
+                    }}
+                  >
+                    {attempts - 1}
                   </div>
                 </div>
               </div>
-            </>
+            </div>
           ) : (
             <TooltipProvider>
               <Tooltip>
