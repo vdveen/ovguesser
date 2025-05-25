@@ -152,7 +152,7 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, previou
             style: {
               color: '#6b7280', // Darker grey color
               weight: 1, // Thin line width
-              opacity: 0.6, // Slightly transparent
+              opacity: 1.0, // Fully opaque
             }
           }).addTo(mapInstanceRef.current);
         }
