@@ -57,15 +57,15 @@ export function getAccuracyRating(distance: number) {
     };
   } else if (distance <= 15000) {
     return {
-      rating: "Good",
+      rating: "Goed",
       color: "amber",
-      description: "Getting close",
+      description: "Dichterbij komen",
     };
   } else {
     return {
-      rating: "Keep Trying",
+      rating: "Blijf Proberen",
       color: "red",
-      description: "Not very close...",
+      description: "Niet heel dichtbij...",
     };
   }
 }
