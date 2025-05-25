@@ -76,52 +76,54 @@ export default function GameHeader({
 
           {/* Result Display */}
           {lastResult && resultInfo && (
-            <div
-              className="mb-4 p-3 bg-slate-50 rounded-lg border-l-4"
-              style={{ borderLeftColor: resultInfo.color }}
-            >
-              {/* Icon/text row */}
-              <div className="flex items-center gap-2 mb-3">
-                <Target className="w-4 h-4 text-slate-500" />
-                <span className="text-sm font-medium text-slate-700">
-                  {lastResult.isWin
-                    ? "🎯 Great guess!"
-                    : resultInfo.description}
-                </span>
-              </div>
+            <>
+              <div
+                className="mb-3 p-2 bg-slate-50 rounded-lg border-l-4"
+                style={{ borderLeftColor: resultInfo.color }}
+              >
+                {/* Icon/text row */}
+                <div className="flex items-center gap-2 mb-2">
+                  <Target className="w-4 h-4 text-slate-500" />
+                  <span className="text-sm font-medium text-slate-700">
+                    {lastResult.isWin
+                      ? "🎯 Great guess!"
+                      : resultInfo.description}
+                  </span>
+                </div>
 
-              {/* Distance row */}
-              <div className="mb-2">
-                <span className="text-xs text-slate-600">Distance:</span>
-                <div
-                  className="text-lg font-bold"
-                  style={{ color: resultInfo.color }}
-                >
-                  {displayDistance}
+                {/* Distance and Attempts side by side */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-xs text-slate-600">Distance:</span>
+                    <div
+                      className="text-lg font-bold"
+                      style={{ color: resultInfo.color }}
+                    >
+                      {displayDistance}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-600">Attempts:</span>
+                    <div
+                      className="text-lg font-bold"
+                      style={{
+                        color:
+                          attempts - 1 <= 2
+                            ? "#10b981"
+                            : attempts - 1 <= 4
+                              ? "#f59e0b"
+                              : "#ef4444",
+                      }}
+                    >
+                      {attempts - 1}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Attempts row */}
-              <div className="mb-3">
-                <span className="text-xs text-slate-600">Attempts:</span>
-                <div
-                  className="text-lg font-bold"
-                  style={{
-                    color:
-                      attempts - 1 <= 2
-                        ? "#10b981"
-                        : attempts - 1 <= 4
-                          ? "#f59e0b"
-                          : "#ef4444",
-                  }}
-                >
-                  {attempts - 1}
-                </div>
-              </div>
-
-              {/* Button row */}
+              {/* Button below result block */}
               {!lastResult.isWin && onRevealLocation && (
-                <div className="flex justify-center">
+                <div className="flex justify-center mb-4">
                   <Button
                     size="sm"
                     variant="outline"
@@ -132,7 +134,7 @@ export default function GameHeader({
                   </Button>
                 </div>
               )}
-            </div>
+            </>
           )}
 
           {/* Game Stats */}
