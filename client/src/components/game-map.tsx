@@ -74,7 +74,7 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, previou
         .then(railwayData => {
           L.geoJSON(railwayData, {
             style: {
-              color: '#d1d5db', // Light grey color
+              color: '#6b7280', // Darker grey color
               weight: 1, // Thin line width
               opacity: 0.6, // Slightly transparent
             }
