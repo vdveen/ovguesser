@@ -36,16 +36,16 @@ export default function ResultModal({ distance, onTryAgain, onNewGame, onRevealL
     } else if (distance <= 10000) {
       return {
         icon: "🧭",
-        title: "Getting Closer",
-        message: "Try a different area!",
+        title: "Dichterbij Komen",
+        message: "Probeer een ander gebied!",
         color: "text-blue-600",
         bgColor: "bg-blue-100",
       };
     } else {
       return {
         icon: "📍",
-        title: "Far Away",
-        message: "Think about the region!",
+        title: "Ver Weg",
+        message: "Denk aan de regio!",
         color: "text-red-600",
         bgColor: "bg-red-100",
       };
@@ -82,7 +82,7 @@ export default function ResultModal({ distance, onTryAgain, onNewGame, onRevealL
           <div className="bg-slate-50 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Target className="w-4 h-4 text-slate-500" />
-              <span className="text-sm text-slate-600">Distance from target:</span>
+              <span className="text-sm text-slate-600">Afstand tot doel:</span>
             </div>
             <div className={`text-3xl font-bold ${resultInfo.color}`}>
               {displayDistance}
@@ -95,7 +95,7 @@ export default function ResultModal({ distance, onTryAgain, onNewGame, onRevealL
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
-              Try Again
+              Probeer Opnieuw
             </Button>
             
             <Button 
@@ -104,7 +104,7 @@ export default function ResultModal({ distance, onTryAgain, onNewGame, onRevealL
               className="border-orange-200 text-orange-700 hover:bg-orange-50"
             >
               <Eye className="w-4 h-4 mr-2" />
-              Reveal Location
+              Toon Locatie
             </Button>
             
             <Button 
@@ -112,7 +112,7 @@ export default function ResultModal({ distance, onTryAgain, onNewGame, onRevealL
               variant="outline"
             >
               <SkipForward className="w-4 h-4 mr-2" />
-              Skip Station
+              Sla Station Over
             </Button>
           </div>
         </CardContent>

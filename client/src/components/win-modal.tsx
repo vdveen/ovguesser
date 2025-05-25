@@ -12,7 +12,7 @@ interface WinModalProps {
 
 export default function WinModal({ stationName, finalDistance, attempts, onNewGame, onClose }: WinModalProps) {
   const handleShare = async () => {
-    const text = `I found ${stationName} in ${attempts} attempts on OVGuesser! 🚂 Final distance: ${finalDistance}m`;
+    const text = `Ik heb ${stationName} gevonden in ${attempts} pogingen op OVGuesser! 🚂 Eindafstand: ${finalDistance}m`;
     
     if (navigator.share) {
       try {
@@ -47,20 +47,20 @@ export default function WinModal({ stationName, finalDistance, attempts, onNewGa
             <Trophy className="w-8 h-8 text-emerald-600" />
           </div>
           
-          <CardTitle className="text-2xl text-slate-900 mb-2">Excellent!</CardTitle>
+          <CardTitle className="text-2xl text-slate-900 mb-2">Uitstekend!</CardTitle>
           <p className="text-slate-600">
-            You found <span className="font-medium">{stationName}</span>
+            Je hebt <span className="font-medium">{stationName}</span> gevonden
           </p>
         </CardHeader>
         
         <CardContent>
           <div className="bg-slate-50 rounded-lg p-4 mb-6 space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-slate-600">Final Distance:</span>
+              <span className="text-slate-600">Eindafstand:</span>
               <span className="font-bold text-emerald-600">{finalDistance}m</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-600">Attempts:</span>
+              <span className="text-slate-600">Pogingen:</span>
               <span className="font-bold text-blue-600">{attempts}</span>
             </div>
           </div>
@@ -71,7 +71,7 @@ export default function WinModal({ stationName, finalDistance, attempts, onNewGa
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Play className="w-4 h-4 mr-2" />
-              Next Station
+              Volgend Station
             </Button>
             
             <Button 
@@ -79,7 +79,7 @@ export default function WinModal({ stationName, finalDistance, attempts, onNewGa
               variant="outline"
             >
               <Share className="w-4 h-4 mr-2" />
-              Share Result
+              Deel Resultaat
             </Button>
           </div>
         </CardContent>

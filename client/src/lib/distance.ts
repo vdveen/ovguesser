@@ -45,15 +45,15 @@ export function formatDistance(distance: number): string {
 export function getAccuracyRating(distance: number) {
   if (distance <= 500) {
     return {
-      rating: "Excellent",
+      rating: "Uitstekend",
       color: "emerald",
       description: "Perfect!",
     };
   } else if (distance <= 2000) {
     return {
-      rating: "Very Good",
+      rating: "Heel Goed",
       color: "yellow",
-      description: "Very close!",
+      description: "Heel dichtbij!",
     };
   } else if (distance <= 15000) {
     return {
