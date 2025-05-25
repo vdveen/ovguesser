@@ -54,7 +54,7 @@ export default function GameHeader({
 
           {/* Station Display */}
           <div className="mb-4">
-            <p className="text-sm text-slate-600 mb-1">
+            <p className="text-sm text-slate-600 mb-3">
               Find this train station:
             </p>
             <div className="bg-blue-600 p-3 rounded-none relative flex items-center gap-3">
@@ -111,8 +111,7 @@ export default function GameHeader({
                   </div>
                 </div>
               </div>
-
-              </>
+            </>
           )}
 
           {/* Button Row */}
@@ -124,7 +123,7 @@ export default function GameHeader({
               className="flex-1"
             >
               <RotateCcw className="w-4 h-4 mr-1" />
-              New
+              Another Station
             </Button>
             {lastResult && !lastResult.isWin && onRevealLocation && (
               <Button
@@ -140,7 +139,6 @@ export default function GameHeader({
           </div>
 
           {/* Game Stats */}
-
 
           {/* Stats Display (Desktop) */}
           {stats && (
