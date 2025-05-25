@@ -273,15 +273,15 @@ export default function GameMap({
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-red-500 rounded-full border border-white shadow-sm"></div>
-            <span className="text-slate-600">Current guess</span>
+            <span className="text-slate-600">Huidige gok</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-amber-500 rounded-full border border-white shadow-sm"></div>
-            <span className="text-slate-600">Previous guesses</span>
+            <span className="text-slate-600">Vorige gokken</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-emerald-500 rounded-full border border-white shadow-sm"></div>
-            <span className="text-slate-600">Actual location</span>
+            <span className="text-slate-600">Werkelijke locatie</span>
           </div>
         </div>
       </div>
@@ -299,7 +299,7 @@ export default function GameMap({
           <div className="bg-white rounded-lg p-4 shadow-lg flex items-center gap-3">
             <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
             <span className="text-sm font-medium text-slate-700">
-              Calculating distance...
+              Afstand berekenen...
             </span>
           </div>
         </div>
