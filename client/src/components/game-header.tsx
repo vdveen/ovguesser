@@ -73,7 +73,7 @@ export default function GameHeader({
           {lastResult && resultInfo ? (
             <div className="mb-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
               {/* Icon/text row */}
-              <div className="hidden md:block flex items-center gap-2 mb-2">
+              <div className="hidden md:flex items-center gap-2 mb-2">
                 <Target className="w-4 h-4 text-slate-500" />
                 <span className="text-sm font-medium text-slate-700">
                   {lastResult.isWin

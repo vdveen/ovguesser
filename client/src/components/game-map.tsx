@@ -164,6 +164,16 @@ export default function GameMap({
         })
         .addTo(mapInstanceRef.current);
 
+      // Add scale bar in a subtle way
+      L.control
+        .scale({
+          position: "bottomright",
+          metric: true,
+          imperial: false,
+          maxWidth: 100,
+        })
+        .addTo(mapInstanceRef.current);
+
       // Load and add railway lines layer (cached)
       try {
         const railwayData = await loadRailwayData();

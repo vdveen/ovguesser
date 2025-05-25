@@ -49,7 +49,7 @@ export function getAccuracyRating(distance: number) {
       color: "emerald",
       description: "Perfect!",
     };
-  } else if (distance <= 2000) {
+  } else if (distance <= 5000) {
     return {
       rating: "Beter!",
       color: "gold",
@@ -58,7 +58,7 @@ export function getAccuracyRating(distance: number) {
   } else if (distance <= 15000) {
     return {
       rating: "Goed",
-      color: "amber",
+      color: "orange",
       description: "In de buurt...",
     };
   } else {
