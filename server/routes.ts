@@ -153,7 +153,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.saveGameResult(result);
 
       // Update global stats
-      await storage.incrementGameStats(result.attempts, result.finalDistance, result.completed === 1);
+      const currentStats = await storage.getGameStats();
+      if (currentStats) {
+        const newTotalGames = currentStats.totalGames + 1;
+        const newTotalAttempts = currentStats.totalAttempts + result.attempts;
+        
+        // Update best distance if this is better or first game
+        let newBestDistance = currentStats.bestDistance;
+        if (result.completed === 1 && (newBestDistance === null || result.finalDistance < newBestDistance)) {
+          newBestDistance = result.finalDistance;
+        }
+
+        // Calculate new average distance
+        const newAverageDistance = (currentStats.averageDistance || 0) * currentStats.totalGames + result.finalDistance;
+        const updatedAverageDistance = newAverageDistance / newTotalGames;
+
+        await storage.updateGameStats({
+          totalGames: newTotalGames,
+          totalAttempts: newTotalAttempts,
+          bestDistance: newBestDistance,
+          averageDistance: updatedAverageDistance,
+        });
+      }
 
       res.json({ success: true, score });
     } catch (error) {
