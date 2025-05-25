@@ -136,20 +136,7 @@ export default function GameHeader({
           )}
 
           {/* Game Stats */}
-          {!lastResult && (
-            <div className="flex items-center justify-between text-sm mb-4">
-              <div className="flex items-center gap-2">
-                <Crosshair className="w-4 h-4 text-blue-600" />
-                <span className="text-slate-600">
-                  Attempt <span className="font-medium">{attempts}</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1 text-slate-500">
-                <Info className="w-3 h-3" />
-                <span className="text-xs">Click to place pin</span>
-              </div>
-            </div>
-          )}
+
 
           {/* Stats Display (Desktop) */}
           {stats && (
