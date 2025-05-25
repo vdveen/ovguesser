@@ -30,6 +30,12 @@ interface GameHeaderProps {
   onNewGame: () => void;
   lastResult?: GameResult | null;
   onRevealLocation?: () => void;
+  sessionProgress?: {
+    current: number;
+    total: number;
+    totalAttempts: number;
+    totalDistance: number;
+  };
 }
 
 export default function GameHeader({
@@ -39,6 +45,7 @@ export default function GameHeader({
   onNewGame,
   lastResult,
   onRevealLocation,
+  sessionProgress,
 }: GameHeaderProps) {
   const displayDistance = lastResult
     ? formatDistance(lastResult.distance)
@@ -53,9 +60,16 @@ export default function GameHeader({
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Train className="w-4 h-4 text-white" />
             </div>
-            <h1 className="text-xl md:text-2xl font-bold text-slate-900">
-              OVGuesser
-            </h1>
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-slate-900">
+                OVGuesser
+              </h1>
+              {sessionProgress && (
+                <p className="text-xs text-slate-600">
+                  Best of 5 - Spel {sessionProgress.current}/5
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Station Display */}

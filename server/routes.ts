@@ -31,6 +31,14 @@ const gameResultSchema = z.object({
   completed: z.number(),
 });
 
+const gameSessionAttemptSchema = z.object({
+  stationId: z.number(),
+  userLat: z.number(),
+  userLng: z.number(),
+  attempt: z.number(),
+  sessionId: z.number(),
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Load station data
   await loadStationData();
@@ -75,7 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Calculate distance for a guess
   app.post("/api/guess", async (req, res) => {
     try {
-      const { stationId, userLat, userLng, attempt } = guessSchema.parse(req.body);
+      const { stationId, userLat, userLng, attempt, sessionId } = gameSessionAttemptSchema.parse(req.body);
       
       const station = await storage.getStationById(stationId);
       if (!station) {
@@ -98,6 +106,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isWin = distance <= 500;
       
       console.log(`Calculated distance: ${distance}m, isWin: ${isWin}`);
+
+      // Update session with this attempt
+      const session = await storage.getCurrentGameSession();
+      if (session && session.id === sessionId) {
+        await storage.updateGameSession(sessionId, {
+          totalAttempts: session.totalAttempts + 1,
+          totalDistance: session.totalDistance + distance,
+        });
+      }
       
       res.json({
         distance: Math.round(distance),
@@ -164,6 +181,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(results);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch game results" });
+    }
+  });
+
+  // Create new game session
+  app.post("/api/session", async (req, res) => {
+    try {
+      const session = await storage.createGameSession();
+      res.json(session);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create game session" });
+    }
+  });
+
+  // Get current game session
+  app.get("/api/session/current", async (req, res) => {
+    try {
+      const session = await storage.getCurrentGameSession();
+      res.json(session);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch current session" });
+    }
+  });
+
+  // Complete game in session
+  app.post("/api/session/:id/complete-game", async (req, res) => {
+    try {
+      const sessionId = parseInt(req.params.id);
+      const session = await storage.getCurrentGameSession();
+      
+      if (!session || session.id !== sessionId) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      const updatedSession = await storage.updateGameSession(sessionId, {
+        gamesCompleted: session.gamesCompleted + 1,
+      });
+
+      // Check if session is complete (5 games)
+      if (updatedSession.gamesCompleted >= 5) {
+        await storage.completeGameSession(sessionId);
+      }
+
+      res.json(updatedSession);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to complete game in session" });
     }
   });
 

@@ -10,6 +10,85 @@ interface WinModalProps {
   onClose: () => void;
 }
 
+interface SessionCompleteModalProps {
+  totalAttempts: number;
+  totalDistance: number;
+  gamesCompleted: number;
+  onNewSession: () => void;
+  onClose: () => void;
+}
+
+export function SessionCompleteModal({
+  totalAttempts,
+  totalDistance,
+  gamesCompleted,
+  onNewSession,
+  onClose,
+}: SessionCompleteModalProps) {
+  const averageAttempts = (totalAttempts / gamesCompleted).toFixed(1);
+  const averageDistance = (totalDistance / gamesCompleted).toFixed(0);
+
+  return (
+    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[1001] p-4">
+      <Card className="w-full max-w-md mx-auto shadow-2xl">
+        <CardHeader className="text-center pb-4">
+          <div className="flex justify-between items-start mb-2">
+            <div></div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Trophy className="w-8 h-8 text-blue-600" />
+          </div>
+
+          <CardTitle className="text-2xl text-slate-900 mb-2">
+            Sessie Voltooid!
+          </CardTitle>
+          <p className="text-slate-600">
+            Je hebt alle {gamesCompleted} stations geraden
+          </p>
+        </CardHeader>
+
+        <CardContent>
+          <div className="bg-slate-50 rounded-lg p-4 mb-6 space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-600">Totaal pogingen:</span>
+              <span className="font-bold text-blue-600">{totalAttempts}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-600">Totaal afstand:</span>
+              <span className="font-bold text-red-600">{Math.round(totalDistance)}m</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-600">Gem. pogingen:</span>
+              <span className="font-bold text-emerald-600">{averageAttempts}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-600">Gem. afstand:</span>
+              <span className="font-bold text-orange-600">{averageDistance}m</span>
+            </div>
+          </div>
+
+          <Button
+            onClick={onNewSession}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Play className="w-4 h-4 mr-2" />
+            Nieuwe Sessie Starten
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function WinModal({
   stationName,
   finalDistance,

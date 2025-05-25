@@ -2,12 +2,15 @@ import {
   trainStations, 
   gameStats, 
   gameResults,
+  gameSessions,
   type TrainStation, 
   type InsertTrainStation,
   type GameStats,
   type InsertGameStats,
   type GameResult,
   type InsertGameResult,
+  type GameSession,
+  type InsertGameSession,
   type StationFeature 
 } from "@shared/schema";
 
@@ -26,21 +29,33 @@ export interface IStorage {
   // Game results methods
   createGameResult(result: InsertGameResult): Promise<GameResult>;
   getRecentResults(limit?: number): Promise<GameResult[]>;
+  
+  // Game session methods
+  createGameSession(): Promise<GameSession>;
+  updateGameSession(id: number, session: Partial<GameSession>): Promise<GameSession>;
+  getCurrentGameSession(): Promise<GameSession | undefined>;
+  completeGameSession(id: number): Promise<GameSession>;
 }
 
 export class MemStorage implements IStorage {
   private stations: Map<number, TrainStation>;
   private gameStats: GameStats | null;
   private gameResults: Map<number, GameResult>;
+  private gameSessions: Map<number, GameSession>;
   private currentStationId: number;
   private currentResultId: number;
+  private currentSessionId: number;
+  private activeSessionId: number | null;
 
   constructor() {
     this.stations = new Map();
     this.gameStats = null;
     this.gameResults = new Map();
+    this.gameSessions = new Map();
     this.currentStationId = 1;
     this.currentResultId = 1;
+    this.currentSessionId = 1;
+    this.activeSessionId = null;
   }
 
   async getAllStations(): Promise<TrainStation[]> {
@@ -109,6 +124,44 @@ export class MemStorage implements IStorage {
   async getRecentResults(limit: number = 10): Promise<GameResult[]> {
     const results = Array.from(this.gameResults.values());
     return results.slice(-limit).reverse();
+  }
+
+  async createGameSession(): Promise<GameSession> {
+    const id = this.currentSessionId++;
+    const session: GameSession = {
+      id,
+      totalAttempts: 0,
+      totalDistance: 0,
+      gamesCompleted: 0,
+      isCompleted: 0,
+    };
+    this.gameSessions.set(id, session);
+    this.activeSessionId = id;
+    return session;
+  }
+
+  async updateGameSession(id: number, sessionUpdate: Partial<GameSession>): Promise<GameSession> {
+    const session = this.gameSessions.get(id);
+    if (!session) throw new Error("Session not found");
+    
+    const updatedSession = { ...session, ...sessionUpdate };
+    this.gameSessions.set(id, updatedSession);
+    return updatedSession;
+  }
+
+  async getCurrentGameSession(): Promise<GameSession | undefined> {
+    if (!this.activeSessionId) return undefined;
+    return this.gameSessions.get(this.activeSessionId);
+  }
+
+  async completeGameSession(id: number): Promise<GameSession> {
+    const session = this.gameSessions.get(id);
+    if (!session) throw new Error("Session not found");
+    
+    const completedSession = { ...session, isCompleted: 1 };
+    this.gameSessions.set(id, completedSession);
+    this.activeSessionId = null;
+    return completedSession;
   }
 }
 

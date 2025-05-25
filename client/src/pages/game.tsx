@@ -5,9 +5,9 @@ import { apiRequest } from "@/lib/queryClient";
 import GameHeader from "@/components/game-header";
 import GameMap from "@/components/game-map";
 import ResultModal from "@/components/result-modal";
-import WinModal from "@/components/win-modal";
+import WinModal, { SessionCompleteModal } from "@/components/win-modal";
 import { Loader2 } from "lucide-react";
-import type { TrainStation } from "@shared/schema";
+import type { TrainStation, GameSession } from "@shared/schema";
 
 interface GuessResult {
   distance: number;
@@ -36,6 +36,8 @@ export default function Game() {
   const [stationMarkerPosition, setStationMarkerPosition] = useState<{lat: number, lng: number} | null>(null);
   const [locationRevealed, setLocationRevealed] = useState(false);
   const [previousGuesses, setPreviousGuesses] = useState<PreviousGuess[]>([]);
+  const [currentSession, setCurrentSession] = useState<GameSession | null>(null);
+  const [showSessionComplete, setShowSessionComplete] = useState(false);
 
   // Fetch game statistics
   const { data: stats } = useQuery({
@@ -61,7 +63,7 @@ export default function Game() {
 
   // Submit guess mutation
   const guessMutation = useMutation({
-    mutationFn: async (data: { stationId: number; userLat: number; userLng: number; attempt: number }) => {
+    mutationFn: async (data: { stationId: number; userLat: number; userLng: number; attempt: number; sessionId: number }) => {
       console.log('Sending guess to server with stationId:', data.stationId);
       const response = await apiRequest("POST", "/api/guess", data);
       const result = await response.json();
@@ -106,6 +108,31 @@ export default function Game() {
     },
   });
 
+  // Create session mutation
+  const createSessionMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/session");
+      return response.json();
+    },
+    onSuccess: (session) => {
+      setCurrentSession(session);
+    },
+  });
+
+  // Complete game in session mutation
+  const completeGameMutation = useMutation({
+    mutationFn: async (sessionId: number) => {
+      const response = await apiRequest("POST", `/api/session/${sessionId}/complete-game`);
+      return response.json();
+    },
+    onSuccess: (session) => {
+      setCurrentSession(session);
+      if (session.gamesCompleted >= 5) {
+        setShowSessionComplete(true);
+      }
+    },
+  });
+
   // Start new game
   const startNewGame = () => {
     setShowResult(false);
@@ -119,13 +146,26 @@ export default function Game() {
     setCurrentStation(null); // Clear current station immediately
     
     console.log('Starting new game...');
+    
+    // Create new session if none exists or if current session is completed
+    if (!currentSession || currentSession.gamesCompleted >= 5) {
+      createSessionMutation.mutate();
+    }
+    
     // Fetch new station
     fetchStationMutation.mutate();
   };
 
+  // Start new session
+  const startNewSession = () => {
+    setShowSessionComplete(false);
+    setCurrentSession(null);
+    startNewGame();
+  };
+
   // Handle map click
   const handleMapClick = (lat: number, lng: number) => {
-    if (!currentStation || guessMutation.isPending) return;
+    if (!currentStation || !currentSession || guessMutation.isPending) return;
     
     console.log('=== MAKING GUESS ===');
     console.log('Current station in state:', currentStation.name, currentStation.id);
@@ -140,6 +180,7 @@ export default function Game() {
       userLat: lat,
       userLng: lng,
       attempt: attempts,
+      sessionId: currentSession.id,
     });
   };
 
@@ -156,15 +197,22 @@ export default function Game() {
 
   // Handle game completion
   const handleGameComplete = () => {
-    if (currentStation && lastGuess) {
+    if (currentStation && lastGuess && currentSession) {
       saveResultMutation.mutate({
         stationId: currentStation.id,
         attempts,
         finalDistance: lastGuess.distance,
         completed: lastGuess.isWin ? 1 : 0,
       });
+      
+      // Complete game in session
+      completeGameMutation.mutate(currentSession.id);
     }
-    startNewGame();
+    
+    // Only start new game if session isn't complete
+    if (!currentSession || currentSession.gamesCompleted < 4) {
+      startNewGame();
+    }
   };
 
   // Initialize first game
@@ -205,6 +253,12 @@ export default function Game() {
         onNewGame={startNewGame}
         lastResult={showResult ? lastGuess : null}
         onRevealLocation={handleRevealLocation}
+        sessionProgress={currentSession ? {
+          current: currentSession.gamesCompleted + 1,
+          total: 5,
+          totalAttempts: currentSession.totalAttempts,
+          totalDistance: currentSession.totalDistance
+        } : undefined}
       />
 
       {/* Game Map */}
@@ -226,6 +280,17 @@ export default function Game() {
           attempts={attempts}
           onNewGame={handleGameComplete}
           onClose={() => setShowWin(false)}
+        />
+      )}
+
+      {/* Session Complete Modal */}
+      {showSessionComplete && currentSession && (
+        <SessionCompleteModal
+          totalAttempts={currentSession.totalAttempts}
+          totalDistance={currentSession.totalDistance}
+          gamesCompleted={currentSession.gamesCompleted}
+          onNewSession={startNewSession}
+          onClose={() => setShowSessionComplete(false)}
         />
       )}
     </div>
