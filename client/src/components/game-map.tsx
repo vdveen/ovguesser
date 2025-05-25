@@ -68,6 +68,15 @@ export default function GameMap({ onMapClick, userMarker, stationMarker, previou
         position: 'bottomright'
       }).addTo(mapInstanceRef.current);
 
+      // Add railway lines layer
+      L.geoJSON(railwayLinesData, {
+        style: {
+          color: '#d1d5db', // Light grey color
+          weight: 1, // Thin line width
+          opacity: 0.6, // Slightly transparent
+        }
+      }).addTo(mapInstanceRef.current);
+
       // Handle map clicks
       mapInstanceRef.current.on('click', (e: any) => {
         if (!isLoadingRef.current) {
