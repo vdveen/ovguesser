@@ -73,9 +73,17 @@ export default function GameHeader({
           {lastResult && resultInfo ? (
             <>
               <div
-                className="mb-3 p-2 bg-slate-50 rounded-lg border-l-4"
-                style={{ borderLeftColor: resultInfo.color }}
-              >
+                className="mb-3 p-2 bg-slate-50 rounded-lg border-2"
+                style={{ 
+                  borderImage: `linear-gradient(to right, ${resultInfo.color}, ${
+                    attempts - 1 <= 2
+                      ? "#10b981"
+                      : attempts - 1 <= 4
+                        ? "#f59e0b"
+                        : "#ef4444"
+                  }) 1`
+                }}
+              ></div>
                 {/* Icon/text row */}
                 <div className="flex items-center gap-2 mb-2">
                   <Target className="w-4 h-4 text-slate-500" />
