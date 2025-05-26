@@ -36,24 +36,42 @@ export function SessionCompleteModal({
   const handleShare = async () => {
     const text = `Ik heb ${totalScore.toLocaleString()} punten gehaald op OVGuesser.nl! 🚂`;
 
-    if (navigator.share) {
+    // Check if Web Share API is available and supported
+    if (navigator.share && navigator.canShare && navigator.canShare({ text })) {
       try {
         await navigator.share({ text });
+        return; // Successfully shared, no need for toast
       } catch (error) {
-        // Fallback to clipboard
-        await navigator.clipboard.writeText(text);
-        toast({
-          title: "Gekopieerd!",
-          description: "Je resultaat is gekopieerd naar het klembord.",
-        });
+        // User cancelled or sharing failed, fall through to clipboard
       }
-    } else {
-      // Fallback to clipboard
+    }
+    
+    // Fallback to clipboard (for desktop browsers or when sharing fails/is cancelled)
+    try {
       await navigator.clipboard.writeText(text);
       toast({
         title: "Gekopieerd!",
         description: "Je resultaat is gekopieerd naar het klembord.",
       });
+    } catch (error) {
+      // Clipboard API not available, try older method
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast({
+          title: "Gekopieerd!",
+          description: "Je resultaat is gekopieerd naar het klembord.",
+        });
+      } catch (fallbackError) {
+        toast({
+          title: "Fout",
+          description: "Kon het resultaat niet kopiëren. Probeer het handmatig te kopiëren.",
+        });
+      }
+      document.body.removeChild(textArea);
     }
   };
 
