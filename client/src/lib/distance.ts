@@ -65,7 +65,7 @@ export function getAccuracyRating(distance: number) {
     return {
       rating: "Blijf proberen!",
       color: "red",
-      description: "Niet erg dichtbij...",
+      description: "Probeer het nog eens!",
     };
   }
 }

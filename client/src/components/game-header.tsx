@@ -102,7 +102,7 @@ export default function GameHeader({
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <span className="text-sm font-medium text-slate-700">
-                      😔 Te jammer... 0 punten! Volgende ronde wordt beter.
+                      0️⃣ punten...volgende ronde beter!
                     </span>
                   </div>
                 </div>
@@ -199,7 +199,7 @@ export default function GameHeader({
           )}
 
           {/* Attribution - hidden on mobile */}
-          <div className="hidden md:block  pt-4 text-center">
+          <div className="hidden md:block  pt-1 text-center">
             <p className="text-xs text-slate-300">
               Gemaakt door Anne v/d Veen met Replit en Sonnet 4
             </p>
