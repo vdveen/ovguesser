@@ -56,29 +56,20 @@ export default function GameHeader({
 
   useEffect(() => {
     if (currentScore !== previousScore) {
-      // First reset any existing flash
-      setScoreFlash('none');
+      if (currentScore > previousScore) {
+        setScoreFlash('green');
+      } else if (currentScore < previousScore) {
+        setScoreFlash('red');
+      }
       
-      // Small delay to ensure the reset takes effect
-      const flashTimer = setTimeout(() => {
-        if (currentScore > previousScore) {
-          setScoreFlash('green');
-        } else if (currentScore < previousScore) {
-          setScoreFlash('red');
-        }
-      }, 50);
-
       // Reset back to none after animation
       const resetTimer = setTimeout(() => {
         setScoreFlash('none');
-      }, 800);
+      }, 1000);
 
       setPreviousScore(currentScore);
       
-      return () => {
-        clearTimeout(flashTimer);
-        clearTimeout(resetTimer);
-      };
+      return () => clearTimeout(resetTimer);
     }
   }, [currentScore, previousScore]);
 
@@ -106,9 +97,9 @@ export default function GameHeader({
                   Ronde <b>{sessionProgress.current}/5</b>
                 </p>
                 <p>
-                  Score: <b className={`transition-all duration-500 ${
-                    scoreFlash === 'green' ? 'text-green-600 scale-110' :
-                    scoreFlash === 'red' ? 'text-red-600 scale-110' :
+                  Score: <b className={`px-2 py-1 rounded transition-all duration-500 ${
+                    scoreFlash === 'green' ? 'bg-green-200 text-green-800' :
+                    scoreFlash === 'red' ? 'bg-red-200 text-red-800' :
                     'text-slate-600'
                   }`}>{currentScore.toLocaleString()}</b>
                 </p>
