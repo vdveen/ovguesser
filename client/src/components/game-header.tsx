@@ -14,6 +14,7 @@ import {
   Target,
   Eye,
   SkipForward,
+  Trophy,
 } from "lucide-react";
 import type { GameStats } from "@shared/schema";
 import { formatDistance, getAccuracyRating } from "@/lib/distance";
@@ -30,6 +31,14 @@ interface GameHeaderProps {
   onNewGame: () => void;
   lastResult?: GameResult | null;
   onRevealLocation?: () => void;
+  sessionProgress?: {
+    current: number;
+    total: number;
+    totalAttempts: number;
+    totalDistance: number;
+    totalScore: number;
+  };
+  currentScore: number;
 }
 
 export default function GameHeader({
@@ -39,6 +48,8 @@ export default function GameHeader({
   onNewGame,
   lastResult,
   onRevealLocation,
+  sessionProgress,
+  currentScore,
 }: GameHeaderProps) {
   const displayDistance = lastResult
     ? formatDistance(lastResult.distance)
@@ -49,13 +60,23 @@ export default function GameHeader({
     <div className="absolute top-4 left-4 right-4 z-[1000] md:left-6 md:right-auto md:top-6">
       <Card className="bg-white/95 backdrop-blur-sm border border-slate-200 shadow-lg max-w-md">
         <CardContent className="p-4 md:p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Train className="w-4 h-4 text-white" />
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Train className="w-4 h-4 text-white" />
+              </div>
+              <h1 className="text-xl md:text-2xl font-bold text-slate-900">
+                OVGuesser
+              </h1>
             </div>
-            <h1 className="text-xl md:text-2xl font-bold text-slate-900">
-              OVGuesser
-            </h1>
+            {sessionProgress && (
+              <div className="text-xs text-slate-600 text-right">
+                <p>Spel {sessionProgress.current}/5</p>
+                <p className="text-amber-600 font-bold">
+                  Score: {sessionProgress.totalScore.toLocaleString()}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Station Display */}
@@ -135,28 +156,19 @@ export default function GameHeader({
           )}
 
           {/* Button Row */}
-          <div className="flex gap-2 mb-4">
-            <Button
-              onClick={onNewGame}
-              variant="outline"
-              size="sm"
-              className="flex-1"
-            >
-              <RotateCcw className="w-4 h-4 mr-1" />
-              Ander station
-            </Button>
-            {lastResult && !lastResult.isWin && onRevealLocation && (
+          {lastResult && !lastResult.isWin && onRevealLocation && (
+            <div className="flex gap-2 mb-4">
               <Button
                 size="sm"
                 variant="outline"
                 onClick={onRevealLocation}
-                className="flex-1"
+                className="w-full"
               >
                 <Eye className="w-3 h-3 mr-1" />
                 Onthul locatie
               </Button>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Game Stats */}
 

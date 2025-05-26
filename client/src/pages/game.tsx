@@ -5,9 +5,9 @@ import { apiRequest } from "@/lib/queryClient";
 import GameHeader from "@/components/game-header";
 import GameMap from "@/components/game-map";
 import ResultModal from "@/components/result-modal";
-import WinModal from "@/components/win-modal";
+import WinModal, { SessionCompleteModal } from "@/components/win-modal";
 import { Loader2 } from "lucide-react";
-import type { TrainStation } from "@shared/schema";
+import type { TrainStation, GameSession } from "@shared/schema";
 
 interface GuessResult {
   distance: number;
@@ -36,6 +36,11 @@ export default function Game() {
   const [stationMarkerPosition, setStationMarkerPosition] = useState<{lat: number, lng: number} | null>(null);
   const [locationRevealed, setLocationRevealed] = useState(false);
   const [previousGuesses, setPreviousGuesses] = useState<PreviousGuess[]>([]);
+  const [currentSession, setCurrentSession] = useState<GameSession | null>(null);
+  const [showSessionComplete, setShowSessionComplete] = useState(false);
+  const [currentRoundDistance, setCurrentRoundDistance] = useState(0);
+  const [currentRoundScore, setCurrentRoundScore] = useState<number | null>(null);
+  const [currentScore, setCurrentScore] = useState(5000);
 
   // Fetch game statistics
   const { data: stats } = useQuery({
@@ -61,7 +66,7 @@ export default function Game() {
 
   // Submit guess mutation
   const guessMutation = useMutation({
-    mutationFn: async (data: { stationId: number; userLat: number; userLng: number; attempt: number }) => {
+    mutationFn: async (data: { stationId: number; userLat: number; userLng: number; attempt: number; sessionId: number }) => {
       console.log('Sending guess to server with stationId:', data.stationId);
       const response = await apiRequest("POST", "/api/guess", data);
       const result = await response.json();
@@ -70,6 +75,16 @@ export default function Game() {
     },
     onSuccess: (result: GuessResult) => {
       setLastGuess(result);
+      
+      // Update round distance
+      const newRoundDistance = currentRoundDistance + result.distance;
+      setCurrentRoundDistance(newRoundDistance);
+      
+      // Calculate and update current score
+      const attemptPenalty = (result.attempt - 1) * 750;
+      const distancePenalty = Math.floor(newRoundDistance / 50);
+      const newScore = Math.max(0, 5000 - attemptPenalty - distancePenalty);
+      setCurrentScore(newScore);
       
       // Add current guess to previous guesses if not winning
       if (!result.isWin && userMarkerPosition) {
@@ -96,13 +111,42 @@ export default function Game() {
 
   // Save game result mutation
   const saveResultMutation = useMutation({
-    mutationFn: async (data: { stationId: number; attempts: number; finalDistance: number; completed: number }) => {
+    mutationFn: async (data: { stationId: number; attempts: number; finalDistance: number; totalRoundDistance: number; completed: number }) => {
       const response = await apiRequest("POST", "/api/game-result", data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      setCurrentRoundScore(result.score);
       // Invalidate stats to refresh them
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+    },
+  });
+
+  // Create session mutation
+  const createSessionMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/session");
+      return response.json();
+    },
+    onSuccess: (session) => {
+      setCurrentSession(session);
+    },
+  });
+
+  // Complete game in session mutation
+  const completeGameMutation = useMutation({
+    mutationFn: async (data: { sessionId: number; roundScore: number }) => {
+      const response = await apiRequest("POST", `/api/session/${data.sessionId}/complete-game`, { roundScore: data.roundScore });
+      return response.json();
+    },
+    onSuccess: (session) => {
+      setCurrentSession(session);
+      if (session.gamesCompleted >= 5) {
+        setShowSessionComplete(true);
+      } else {
+        // Continue to next game if session isn't complete
+        startNewGame();
+      }
     },
   });
 
@@ -117,15 +161,31 @@ export default function Game() {
     setLocationRevealed(false);
     setPreviousGuesses([]);
     setCurrentStation(null); // Clear current station immediately
+    setCurrentRoundDistance(0);
+    setCurrentRoundScore(null);
+    setCurrentScore(5000);
     
     console.log('Starting new game...');
+    
+    // Create new session if none exists or if current session is completed
+    if (!currentSession || currentSession.gamesCompleted >= 5) {
+      createSessionMutation.mutate();
+    }
+    
     // Fetch new station
     fetchStationMutation.mutate();
   };
 
+  // Start new session
+  const startNewSession = () => {
+    setShowSessionComplete(false);
+    setCurrentSession(null);
+    startNewGame();
+  };
+
   // Handle map click
   const handleMapClick = (lat: number, lng: number) => {
-    if (!currentStation || guessMutation.isPending) return;
+    if (!currentStation || !currentSession || guessMutation.isPending) return;
     
     console.log('=== MAKING GUESS ===');
     console.log('Current station in state:', currentStation.name, currentStation.id);
@@ -140,6 +200,7 @@ export default function Game() {
       userLat: lat,
       userLng: lng,
       attempt: attempts,
+      sessionId: currentSession.id,
     });
   };
 
@@ -156,15 +217,26 @@ export default function Game() {
 
   // Handle game completion
   const handleGameComplete = () => {
-    if (currentStation && lastGuess) {
+    if (currentStation && lastGuess && currentSession) {
+      const totalRoundDistance = currentRoundDistance + lastGuess.distance;
+      
       saveResultMutation.mutate({
         stationId: currentStation.id,
         attempts,
         finalDistance: lastGuess.distance,
+        totalRoundDistance,
         completed: lastGuess.isWin ? 1 : 0,
       });
+      
+      // Wait for score calculation, then complete game in session
+      setTimeout(() => {
+        if (currentRoundScore !== null) {
+          completeGameMutation.mutate({ sessionId: currentSession.id, roundScore: currentRoundScore });
+        }
+      }, 100);
     }
-    startNewGame();
+    
+    // Don't automatically start new game - let the session complete handler manage this
   };
 
   // Initialize first game
@@ -205,6 +277,14 @@ export default function Game() {
         onNewGame={startNewGame}
         lastResult={showResult ? lastGuess : null}
         onRevealLocation={handleRevealLocation}
+        currentScore={currentScore}
+        sessionProgress={currentSession ? {
+          current: currentSession.gamesCompleted + 1,
+          total: 5,
+          totalAttempts: currentSession.totalAttempts,
+          totalDistance: currentSession.totalDistance,
+          totalScore: currentSession.totalScore
+        } : undefined}
       />
 
       {/* Game Map */}
@@ -224,8 +304,21 @@ export default function Game() {
           stationName={currentStation.name}
           finalDistance={lastGuess.distance}
           attempts={attempts}
+          roundScore={currentScore}
           onNewGame={handleGameComplete}
           onClose={() => setShowWin(false)}
+        />
+      )}
+
+      {/* Session Complete Modal */}
+      {showSessionComplete && currentSession && (
+        <SessionCompleteModal
+          totalAttempts={currentSession.totalAttempts}
+          totalDistance={currentSession.totalDistance}
+          totalScore={currentSession.totalScore}
+          gamesCompleted={currentSession.gamesCompleted}
+          onNewSession={startNewSession}
+          onClose={() => setShowSessionComplete(false)}
         />
       )}
     </div>

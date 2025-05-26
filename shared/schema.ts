@@ -22,7 +22,18 @@ export const gameResults = pgTable("game_results", {
   stationId: integer("station_id").references(() => trainStations.id),
   attempts: integer("attempts").notNull(),
   finalDistance: real("final_distance").notNull(), // in meters
+  totalRoundDistance: real("total_round_distance").notNull().default(0), // total of all attempts in this round
+  score: integer("score").notNull().default(0), // calculated score for this round
   completed: integer("completed").notNull().default(0), // boolean as integer
+});
+
+export const gameSessions = pgTable("game_sessions", {
+  id: serial("id").primaryKey(),
+  totalAttempts: integer("total_attempts").notNull().default(0),
+  totalDistance: real("total_distance").notNull().default(0), // sum of all attempts distances
+  gamesCompleted: integer("games_completed").notNull().default(0),
+  totalScore: integer("total_score").notNull().default(0), // total score across all games
+  isCompleted: integer("is_completed").notNull().default(0), // boolean as integer
 });
 
 export const insertTrainStationSchema = createInsertSchema(trainStations).omit({
@@ -37,6 +48,10 @@ export const insertGameResultSchema = createInsertSchema(gameResults).omit({
   id: true,
 });
 
+export const insertGameSessionSchema = createInsertSchema(gameSessions).omit({
+  id: true,
+});
+
 export type TrainStation = typeof trainStations.$inferSelect;
 export type InsertTrainStation = z.infer<typeof insertTrainStationSchema>;
 
@@ -45,6 +60,9 @@ export type InsertGameStats = z.infer<typeof insertGameStatsSchema>;
 
 export type GameResult = typeof gameResults.$inferSelect;
 export type InsertGameResult = z.infer<typeof insertGameResultSchema>;
+
+export type GameSession = typeof gameSessions.$inferSelect;
+export type InsertGameSession = z.infer<typeof insertGameSessionSchema>;
 
 // GeoJSON types for frontend
 export interface StationFeature {
