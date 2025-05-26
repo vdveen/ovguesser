@@ -32,7 +32,7 @@ export function SessionCompleteModal({
   const averageScore = Math.round(totalScore / gamesCompleted);
 
   const handleShare = async () => {
-    const text = `Ik heb een sessie voltooid op OVGuesser.nl! 🚂\n${gamesCompleted} stations geraden met ${totalScore.toLocaleString()} punten totaal!`;
+    const text = `Ik heb ${totalScore.toLocaleString()} punten gehaald op OVGuesser.nl! 🚂`;
 
     if (navigator.share) {
       try {
@@ -79,11 +79,15 @@ export function SessionCompleteModal({
           <div className="bg-slate-50 rounded-lg p-4 mb-6 space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-slate-600">Totaal score:</span>
-              <span className="font-bold text-purple-600 text-lg">{totalScore.toLocaleString()}</span>
+              <span className="font-bold text-purple-600 text-lg">
+                {totalScore.toLocaleString()}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-600">Gem. score:</span>
-              <span className="font-bold text-purple-500">{averageScore.toLocaleString()}</span>
+              <span className="font-bold text-purple-500">
+                {averageScore.toLocaleString()}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-600">Totaal pogingen:</span>
@@ -91,15 +95,21 @@ export function SessionCompleteModal({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-600">Totaal afstand:</span>
-              <span className="font-bold text-red-600">{Math.round(totalDistance / 1000)}km</span>
+              <span className="font-bold text-red-600">
+                {Math.round(totalDistance / 1000)}km
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-600">Gem. pogingen:</span>
-              <span className="font-bold text-emerald-600">{averageAttempts}</span>
+              <span className="font-bold text-emerald-600">
+                {averageAttempts}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-600">Gem. afstand:</span>
-              <span className="font-bold text-orange-600">{Math.round(totalDistance / gamesCompleted / 1000)}km</span>
+              <span className="font-bold text-orange-600">
+                {Math.round(totalDistance / gamesCompleted / 1000)}km
+              </span>
             </div>
           </div>
 
@@ -132,7 +142,7 @@ export default function WinModal({
   onClose,
 }: WinModalProps) {
   const handleShare = async () => {
-    const text = `Ik heb ${stationName} gevonden in ${attempts} pogingen en ${finalDistance}m op OVGuesser.nl! 🚂`;
+    const text = `Ik heb ${totalScore.toLocaleString()} punten gehaald op OVGuesser.nl! 🚂`;
 
     if (navigator.share) {
       try {
@@ -190,7 +200,9 @@ export default function WinModal({
             {roundScore !== undefined && (
               <div className="flex justify-between items-center">
                 <span className="text-slate-600">Ronde Score:</span>
-                <span className="font-bold text-purple-600">{roundScore.toLocaleString()}</span>
+                <span className="font-bold text-purple-600">
+                  {roundScore.toLocaleString()}
+                </span>
               </div>
             )}
           </div>
