@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Play, X } from "lucide-react";
+import { Trophy, Play, X, Share } from "lucide-react";
 
 interface WinModalProps {
   stationName: string;
