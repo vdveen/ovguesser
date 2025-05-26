@@ -17,7 +17,6 @@ import {
   Trophy,
 } from "lucide-react";
 import { formatDistance, getAccuracyRating } from "@/lib/distance";
-import { useEffect, useState } from "react";
 
 interface GameResult {
   distance: number;
@@ -51,28 +50,6 @@ export default function GameHeader({
   sessionProgress,
   currentScore,
 }: GameHeaderProps) {
-  const [scoreFlash, setScoreFlash] = useState<'none' | 'green' | 'red'>('none');
-  const [previousScore, setPreviousScore] = useState(currentScore);
-
-  useEffect(() => {
-    if (currentScore !== previousScore) {
-      if (currentScore > previousScore) {
-        setScoreFlash('green');
-      } else if (currentScore < previousScore) {
-        setScoreFlash('red');
-      }
-      
-      // Reset back to none after animation
-      const resetTimer = setTimeout(() => {
-        setScoreFlash('none');
-      }, 1000);
-
-      setPreviousScore(currentScore);
-      
-      return () => clearTimeout(resetTimer);
-    }
-  }, [currentScore, previousScore]);
-
   const displayDistance = lastResult
     ? formatDistance(lastResult.distance)
     : null;
@@ -97,11 +74,7 @@ export default function GameHeader({
                   Ronde <b>{sessionProgress.current}/5</b>
                 </p>
                 <p>
-                  Score: <b className={`px-2 py-1 rounded transition-all duration-500 ${
-                    scoreFlash === 'green' ? 'bg-green-200 text-green-800' :
-                    scoreFlash === 'red' ? 'bg-red-200 text-red-800' :
-                    'text-slate-600'
-                  }`}>{currentScore.toLocaleString()}</b>
+                  Score: <b>{currentScore.toLocaleString()}</b>
                 </p>
                 <p>
                   Totaal: <b>{sessionProgress.totalScore.toLocaleString()} </b>

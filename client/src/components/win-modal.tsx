@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, Play, X, Share } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 interface WinModalProps {
   stationName: string;
@@ -29,7 +28,6 @@ export function SessionCompleteModal({
   onNewSession,
   onClose,
 }: SessionCompleteModalProps) {
-  const { toast } = useToast();
   const averageAttempts = (totalAttempts / gamesCompleted).toFixed(1);
   const averageScore = Math.round(totalScore / gamesCompleted);
 
@@ -41,19 +39,11 @@ export function SessionCompleteModal({
         await navigator.share({ text });
       } catch (error) {
         // Fallback to clipboard
-        await navigator.clipboard.writeText(text);
-        toast({
-          title: "Gekopieerd!",
-          description: "Je resultaat is gekopieerd naar het klembord.",
-        });
+        navigator.clipboard.writeText(text);
       }
     } else {
       // Fallback to clipboard
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: "Gekopieerd!",
-        description: "Je resultaat is gekopieerd naar het klembord.",
-      });
+      navigator.clipboard.writeText(text);
     }
   };
 
