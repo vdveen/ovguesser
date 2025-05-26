@@ -159,7 +159,9 @@ export default function Game() {
     setCurrentStation(null); // Clear current station immediately
     setCurrentRoundDistance(0);
     setCurrentRoundScore(null);
-    setCurrentScore(5000); // Start each round with 5000 points
+    // Start with session total score + 5000 for new round
+    const baseScore = currentSession ? currentSession.totalScore + 5000 : 5000;
+    setCurrentScore(baseScore);
     
     console.log('Starting new game...');
     
