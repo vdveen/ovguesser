@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { gameLogger } from "./logger";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
@@ -138,6 +139,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { stationId, attempts, finalDistance, totalRoundDistance, completed } = req.body;
 
+      // Get station info for logging
+      const station = await storage.getStationById(stationId);
+      const stationName = station?.name || "Unknown";
+
       // Calculate score for this round using final distance (not cumulative)
       const score = storage.calculateRoundScore(attempts, finalDistance);
 
@@ -151,6 +156,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       await storage.saveGameResult(result);
+
+      // Log to CSV file
+      gameLogger.logGameResult({
+        stationName,
+        attempts,
+        finalDistance,
+        score,
+        completed: completed === 1,
+        timestamp: new Date().toISOString()
+      });
 
       // Update global stats
       const currentStats = await storage.getGameStats();
