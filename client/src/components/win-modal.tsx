@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Play, X } from "lucide-react";
+import { Trophy, Play, X, Share } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface WinModalProps {
   stationName: string;
@@ -28,22 +29,50 @@ export function SessionCompleteModal({
   onNewSession,
   onClose,
 }: SessionCompleteModalProps) {
+  const { toast } = useToast();
   const averageAttempts = (totalAttempts / gamesCompleted).toFixed(1);
   const averageScore = Math.round(totalScore / gamesCompleted);
 
   const handleShare = async () => {
     const text = `Ik heb ${totalScore.toLocaleString()} punten gehaald op OVGuesser.nl! 🚂`;
 
-    if (navigator.share) {
+    // Check if Web Share API is available and supported
+    if (navigator.share && navigator.canShare && navigator.canShare({ text })) {
       try {
         await navigator.share({ text });
+        return; // Successfully shared, no need for toast
       } catch (error) {
-        // Fallback to clipboard
-        navigator.clipboard.writeText(text);
+        // User cancelled or sharing failed, fall through to clipboard
       }
-    } else {
-      // Fallback to clipboard
-      navigator.clipboard.writeText(text);
+    }
+
+    // Fallback to clipboard (for desktop browsers or when sharing fails/is cancelled)
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Gekopieerd!",
+        description: "Je resultaat is gekopieerd naar het klembord.",
+      });
+    } catch (error) {
+      // Clipboard API not available, try older method
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand("copy");
+        toast({
+          title: "Gekopieerd!",
+          description: "Je resultaat is gekopieerd naar het klembord.",
+        });
+      } catch (fallbackError) {
+        toast({
+          title: "Fout",
+          description:
+            "Kon het resultaat niet kopiëren. Probeer het handmatig te kopiëren.",
+        });
+      }
+      document.body.removeChild(textArea);
     }
   };
 
@@ -68,10 +97,10 @@ export function SessionCompleteModal({
           </div>
 
           <CardTitle className="text-2xl text-slate-900 mb-2">
-            Sessie Voltooid!
+            Goed gedaan!
           </CardTitle>
           <p className="text-slate-600">
-            Je hebt alle {gamesCompleted} stations geraden
+            Je hebt {totalScore.toLocaleString()} punten gehaald
           </p>
         </CardHeader>
 
@@ -90,11 +119,11 @@ export function SessionCompleteModal({
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-600">Totaal pogingen:</span>
+              <span className="text-slate-600">Totale pogingen:</span>
               <span className="font-bold text-blue-600">{totalAttempts}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-600">Totaal afstand:</span>
+              <span className="text-slate-600">Totale afstand:</span>
               <span className="font-bold text-red-600">
                 {Math.round(totalDistance / 1000)}km
               </span>
