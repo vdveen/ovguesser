@@ -153,28 +153,19 @@ export default function GameHeader({
           )}
 
           {/* Button Row */}
-          <div className="flex gap-2 mb-4">
-            <Button
-              onClick={onNewGame}
-              variant="outline"
-              size="sm"
-              className="flex-1"
-            >
-              <RotateCcw className="w-4 h-4 mr-1" />
-              Ander station
-            </Button>
-            {lastResult && !lastResult.isWin && onRevealLocation && (
+          {lastResult && !lastResult.isWin && onRevealLocation && (
+            <div className="flex gap-2 mb-4">
               <Button
                 size="sm"
                 variant="outline"
                 onClick={onRevealLocation}
-                className="flex-1"
+                className="w-full"
               >
                 <Eye className="w-3 h-3 mr-1" />
                 Onthul locatie
               </Button>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Game Stats */}
 
