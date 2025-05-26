@@ -31,6 +31,22 @@ export function SessionCompleteModal({
   const averageAttempts = (totalAttempts / gamesCompleted).toFixed(1);
   const averageScore = Math.round(totalScore / gamesCompleted);
 
+  const handleShare = async () => {
+    const text = `Ik heb een sessie voltooid op OVGuesser.nl! 🚂\n${gamesCompleted} stations geraden met ${totalScore.toLocaleString()} punten totaal!`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ text });
+      } catch (error) {
+        // Fallback to clipboard
+        navigator.clipboard.writeText(text);
+      }
+    } else {
+      // Fallback to clipboard
+      navigator.clipboard.writeText(text);
+    }
+  };
+
   return (
     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[1001] p-4">
       <Card className="w-full max-w-md mx-auto shadow-2xl">
@@ -87,13 +103,20 @@ export function SessionCompleteModal({
             </div>
           </div>
 
-          <Button
-            onClick={onNewSession}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Play className="w-4 h-4 mr-2" />
-            Nieuwe Sessie Starten
-          </Button>
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={onNewSession}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Play className="w-4 h-4 mr-2" />
+              Nieuwe Sessie Starten
+            </Button>
+
+            <Button onClick={handleShare} variant="outline">
+              <Share className="w-4 h-4 mr-2" />
+              Deel Resultaat
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
