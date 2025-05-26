@@ -16,7 +16,7 @@ import {
   SkipForward,
   Trophy,
 } from "lucide-react";
-import { getAccuracyRating } from "@/lib/distance";
+import { formatDistance, getAccuracyRating } from "@/lib/distance";
 
 interface GameResult {
   distance: number;
