@@ -13,7 +13,8 @@ import {
   Info,
   Target,
   Eye,
-  SkipForward, Trophy
+  SkipForward,
+  Trophy,
 } from "lucide-react";
 import type { GameStats } from "@shared/schema";
 import { formatDistance, getAccuracyRating } from "@/lib/distance";
@@ -71,7 +72,9 @@ export default function GameHeader({
             {sessionProgress && (
               <div className="text-xs text-slate-600 text-right">
                 <p>Spel {sessionProgress.current}/5</p>
-                <p className="text-purple-600 font-medium">{sessionProgress.totalScore.toLocaleString()}</p>
+                <p className="text-amber-600 font-bold">
+                  Score: {sessionProgress.totalScore.toLocaleString()}
+                </p>
               </div>
             )}
           </div>
