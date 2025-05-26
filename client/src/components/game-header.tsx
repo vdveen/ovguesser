@@ -29,6 +29,7 @@ interface GameHeaderProps {
   onNewGame: () => void;
   lastResult?: GameResult | null;
   onRevealLocation?: () => void;
+  locationRevealed?: boolean;
   sessionProgress?: {
     current: number;
     total: number;
@@ -45,6 +46,7 @@ export default function GameHeader({
   onNewGame,
   lastResult,
   onRevealLocation,
+  locationRevealed,
   sessionProgress,
   currentScore,
 }: GameHeaderProps) {
@@ -95,44 +97,57 @@ export default function GameHeader({
           {/* Result Display or Initial Tooltip */}
           {lastResult && resultInfo ? (
             <div className="mb-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-              {/* Icon/text row */}
-              <div className="hidden md:flex items-center gap-2 mb-2">
-                <Target className="w-4 h-4 text-slate-500" />
-                <span className="text-sm font-medium text-slate-700">
-                  {lastResult.isWin
-                    ? "🎯 Geweldige gok!"
-                    : resultInfo.description}
-                </span>
-              </div>
+              {onRevealLocation && locationRevealed ? (
+                /* Location was revealed - show different message */
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-sm font-medium text-slate-700">
+                      😔 Te jammer... 0 punten! Volgende ronde wordt beter.
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Icon/text row */}
+                  <div className="hidden md:flex items-center gap-2 mb-2">
+                    <Target className="w-4 h-4 text-slate-500" />
+                    <span className="text-sm font-medium text-slate-700">
+                      {lastResult.isWin
+                        ? "🎯 Geweldige gok!"
+                        : resultInfo.description}
+                    </span>
+                  </div>
 
-              {/* Distance and Attempts side by side */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <span className="text-xs text-slate-600">Afstand:</span>
-                  <div
-                    className="text-lg font-bold"
-                    style={{ color: resultInfo.color }}
-                  >
-                    {displayDistance}
+                  {/* Distance and Attempts side by side */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-xs text-slate-600">Afstand:</span>
+                      <div
+                        className="text-lg font-bold"
+                        style={{ color: resultInfo.color }}
+                      >
+                        {displayDistance}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-600">Pogingen:</span>
+                      <div
+                        className="text-lg font-bold"
+                        style={{
+                          color:
+                            attempts - 1 <= 2
+                              ? "#10b981"
+                              : attempts - 1 <= 4
+                                ? "#f59e0b"
+                                : "#ef4444",
+                        }}
+                      >
+                        {attempts - 1}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-600">Pogingen:</span>
-                  <div
-                    className="text-lg font-bold"
-                    style={{
-                      color:
-                        attempts - 1 <= 2
-                          ? "#10b981"
-                          : attempts - 1 <= 4
-                            ? "#f59e0b"
-                            : "#ef4444",
-                    }}
-                  >
-                    {attempts - 1}
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
             </div>
           ) : (
             <TooltipProvider>
@@ -158,17 +173,28 @@ export default function GameHeader({
           )}
 
           {/* Button Row */}
-          {lastResult && !lastResult.isWin && onRevealLocation && (
+          {lastResult && !lastResult.isWin && (
             <div className="flex gap-2 mb-4">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onRevealLocation}
-                className="w-full"
-              >
-                <Eye className="w-3 h-3 mr-1" />
-                Onthul locatie
-              </Button>
+              {locationRevealed ? (
+                <Button
+                  size="sm"
+                  onClick={onNewGame}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <SkipForward className="w-3 h-3 mr-1" />
+                  Volgend Station
+                </Button>
+              ) : onRevealLocation ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onRevealLocation}
+                  className="w-full"
+                >
+                  <Eye className="w-3 h-3 mr-1" />
+                  Onthul locatie
+                </Button>
+              ) : null}
             </div>
           )}
 
