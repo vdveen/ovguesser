@@ -13,7 +13,7 @@ import {
   Info,
   Target,
   Eye,
-  SkipForward,
+  SkipForward, Trophy
 } from "lucide-react";
 import type { GameStats } from "@shared/schema";
 import { formatDistance, getAccuracyRating } from "@/lib/distance";
@@ -37,6 +37,7 @@ interface GameHeaderProps {
     totalDistance: number;
     totalScore: number;
   };
+  currentScore: number;
 }
 
 export default function GameHeader({
@@ -47,6 +48,7 @@ export default function GameHeader({
   lastResult,
   onRevealLocation,
   sessionProgress,
+  currentScore,
 }: GameHeaderProps) {
   const displayDistance = lastResult
     ? formatDistance(lastResult.distance)

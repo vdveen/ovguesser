@@ -40,6 +40,7 @@ export default function Game() {
   const [showSessionComplete, setShowSessionComplete] = useState(false);
   const [currentRoundDistance, setCurrentRoundDistance] = useState(0);
   const [currentRoundScore, setCurrentRoundScore] = useState<number | null>(null);
+  const [currentScore, setCurrentScore] = useState(5000);
 
   // Fetch game statistics
   const { data: stats } = useQuery({
@@ -76,7 +77,14 @@ export default function Game() {
       setLastGuess(result);
       
       // Update round distance
-      setCurrentRoundDistance(prev => prev + result.distance);
+      const newRoundDistance = currentRoundDistance + result.distance;
+      setCurrentRoundDistance(newRoundDistance);
+      
+      // Calculate and update current score
+      const attemptPenalty = (result.attempt - 1) * 750;
+      const distancePenalty = Math.floor(newRoundDistance / 50);
+      const newScore = Math.max(0, 5000 - attemptPenalty - distancePenalty);
+      setCurrentScore(newScore);
       
       // Add current guess to previous guesses if not winning
       if (!result.isWin && userMarkerPosition) {
@@ -155,6 +163,7 @@ export default function Game() {
     setCurrentStation(null); // Clear current station immediately
     setCurrentRoundDistance(0);
     setCurrentRoundScore(null);
+    setCurrentScore(5000);
     
     console.log('Starting new game...');
     
@@ -268,6 +277,7 @@ export default function Game() {
         onNewGame={startNewGame}
         lastResult={showResult ? lastGuess : null}
         onRevealLocation={handleRevealLocation}
+        currentScore={currentScore}
         sessionProgress={currentSession ? {
           current: currentSession.gamesCompleted + 1,
           total: 5,
@@ -294,6 +304,7 @@ export default function Game() {
           stationName={currentStation.name}
           finalDistance={lastGuess.distance}
           attempts={attempts}
+          roundScore={currentScore}
           onNewGame={handleGameComplete}
           onClose={() => setShowWin(false)}
         />

@@ -6,6 +6,7 @@ interface WinModalProps {
   stationName: string;
   finalDistance: number;
   attempts: number;
+  roundScore?: number;
   onNewGame: () => void;
   onClose: () => void;
 }
@@ -103,6 +104,7 @@ export default function WinModal({
   stationName,
   finalDistance,
   attempts,
+  roundScore,
   onNewGame,
   onClose,
 }: WinModalProps) {
@@ -162,6 +164,12 @@ export default function WinModal({
               <span className="text-slate-600">Pogingen:</span>
               <span className="font-bold text-blue-600">{attempts}</span>
             </div>
+            {roundScore !== undefined && (
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600">Ronde Score:</span>
+                <span className="font-bold text-purple-600">{roundScore.toLocaleString()}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-3">
