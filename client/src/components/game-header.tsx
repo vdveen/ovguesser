@@ -70,7 +70,7 @@ export default function GameHeader({
               <div className="text-xs text-slate-600 text-right">
                 <p>Spel {sessionProgress.current}/5</p>
                 <p className="text-amber-600 font-bold">
-                  Score: {sessionProgress.totalScore.toLocaleString()}
+                  Score: {currentScore.toLocaleString()}
                 </p>
               </div>
             )}
