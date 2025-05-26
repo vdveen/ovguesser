@@ -27,22 +27,32 @@ interface PreviousGuess {
 }
 
 export default function Game() {
-  const [currentStation, setCurrentStation] = useState<TrainStation | null>(null);
+  const [currentStation, setCurrentStation] = useState<TrainStation | null>(
+    null,
+  );
   const [attempts, setAttempts] = useState(1);
   const [showResult, setShowResult] = useState(false);
   const [showWin, setShowWin] = useState(false);
   const [lastGuess, setLastGuess] = useState<GuessResult | null>(null);
-  const [userMarkerPosition, setUserMarkerPosition] = useState<{lat: number, lng: number} | null>(null);
-  const [stationMarkerPosition, setStationMarkerPosition] = useState<{lat: number, lng: number} | null>(null);
+  const [userMarkerPosition, setUserMarkerPosition] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [stationMarkerPosition, setStationMarkerPosition] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [locationRevealed, setLocationRevealed] = useState(false);
   const [previousGuesses, setPreviousGuesses] = useState<PreviousGuess[]>([]);
-  const [currentSession, setCurrentSession] = useState<GameSession | null>(null);
+  const [currentSession, setCurrentSession] = useState<GameSession | null>(
+    null,
+  );
   const [showSessionComplete, setShowSessionComplete] = useState(false);
   const [currentRoundDistance, setCurrentRoundDistance] = useState(0);
-  const [currentRoundScore, setCurrentRoundScore] = useState<number | null>(null);
+  const [currentRoundScore, setCurrentRoundScore] = useState<number | null>(
+    null,
+  );
   const [currentScore, setCurrentScore] = useState(5000);
-
-  
 
   // Fetch new random station mutation
   const fetchStationMutation = useMutation({
@@ -51,50 +61,59 @@ export default function Game() {
       return response.json();
     },
     onSuccess: (station) => {
-      console.log('Fetched new station:', station.name, station.id);
-      console.log('Station coordinates:', station.coordinates);
+      console.log("Fetched new station:", station.name, station.id);
+      console.log("Station coordinates:", station.coordinates);
       setCurrentStation(station);
     },
     onError: (error) => {
-      console.error('Failed to fetch station:', error);
-    }
+      console.error("Failed to fetch station:", error);
+    },
   });
 
   // Submit guess mutation
   const guessMutation = useMutation({
-    mutationFn: async (data: { stationId: number; userLat: number; userLng: number; attempt: number; sessionId: number }) => {
-      console.log('Sending guess to server with stationId:', data.stationId);
+    mutationFn: async (data: {
+      stationId: number;
+      userLat: number;
+      userLng: number;
+      attempt: number;
+      sessionId: number;
+    }) => {
+      console.log("Sending guess to server with stationId:", data.stationId);
       const response = await apiRequest("POST", "/api/guess", data);
       const result = await response.json();
-      console.log('Server response:', result);
+      console.log("Server response:", result);
       return result;
     },
     onSuccess: (result: GuessResult) => {
       setLastGuess(result);
-      
+
       // Calculate current score: start with 5000, deduct 750 per attempt and distance/100 per guess
-      const attemptPenalty = (result.attempt - 1) * 750; // No penalty for first attempt
-      const distancePenalty = Math.floor(result.distance / 100); // Penalty for this guess distance
+      const attemptPenalty = (result.attempt - 1) * 500; // No penalty for first attempt
+      const distancePenalty = Math.floor(result.distance / 200); // Penalty for this guess distance
       const newScore = Math.max(0, 5000 - attemptPenalty - distancePenalty);
       setCurrentScore(newScore);
-      
+
       // Update round distance (cumulative for session tracking)
       const newRoundDistance = currentRoundDistance + result.distance;
       setCurrentRoundDistance(newRoundDistance);
-      
+
       // Add current guess to previous guesses if not winning
       if (!result.isWin && userMarkerPosition) {
-        setPreviousGuesses(prev => [...prev, {
-          lat: userMarkerPosition.lat,
-          lng: userMarkerPosition.lng,
-          distance: result.distance,
-          attempt: result.attempt
-        }]);
-        
+        setPreviousGuesses((prev) => [
+          ...prev,
+          {
+            lat: userMarkerPosition.lat,
+            lng: userMarkerPosition.lng,
+            distance: result.distance,
+            attempt: result.attempt,
+          },
+        ]);
+
         // Increment attempts for next guess only if not winning
-        setAttempts(prev => prev + 1);
+        setAttempts((prev) => prev + 1);
       }
-      
+
       if (result.isWin) {
         setStationMarkerPosition(result.stationLocation);
         setLocationRevealed(true);
@@ -107,7 +126,13 @@ export default function Game() {
 
   // Save game result mutation
   const saveResultMutation = useMutation({
-    mutationFn: async (data: { stationId: number; attempts: number; finalDistance: number; totalRoundDistance: number; completed: number }) => {
+    mutationFn: async (data: {
+      stationId: number;
+      attempts: number;
+      finalDistance: number;
+      totalRoundDistance: number;
+      completed: number;
+    }) => {
       const response = await apiRequest("POST", "/api/game-result", data);
       return response.json();
     },
@@ -132,7 +157,11 @@ export default function Game() {
   // Complete game in session mutation
   const completeGameMutation = useMutation({
     mutationFn: async (data: { sessionId: number; roundScore: number }) => {
-      const response = await apiRequest("POST", `/api/session/${data.sessionId}/complete-game`, { roundScore: data.roundScore });
+      const response = await apiRequest(
+        "POST",
+        `/api/session/${data.sessionId}/complete-game`,
+        { roundScore: data.roundScore },
+      );
       return response.json();
     },
     onSuccess: (session) => {
@@ -162,14 +191,14 @@ export default function Game() {
     // Start with session total score + 5000 for new round
     const baseScore = currentSession ? currentSession.totalScore + 5000 : 5000;
     setCurrentScore(baseScore);
-    
-    console.log('Starting new game...');
-    
+
+    console.log("Starting new game...");
+
     // Create new session if none exists or if current session is completed
     if (!currentSession || currentSession.gamesCompleted >= 5) {
       createSessionMutation.mutate();
     }
-    
+
     // Fetch new station
     fetchStationMutation.mutate();
   };
@@ -184,15 +213,19 @@ export default function Game() {
   // Handle map click
   const handleMapClick = (lat: number, lng: number) => {
     if (!currentStation || !currentSession || guessMutation.isPending) return;
-    
-    console.log('=== MAKING GUESS ===');
-    console.log('Current station in state:', currentStation.name, currentStation.id);
-    console.log('Current station coordinates:', currentStation.coordinates);
-    console.log('User clicked at:', lat, lng);
-    console.log('Attempt number:', attempts);
-    
+
+    console.log("=== MAKING GUESS ===");
+    console.log(
+      "Current station in state:",
+      currentStation.name,
+      currentStation.id,
+    );
+    console.log("Current station coordinates:", currentStation.coordinates);
+    console.log("User clicked at:", lat, lng);
+    console.log("Attempt number:", attempts);
+
     setUserMarkerPosition({ lat, lng });
-    
+
     guessMutation.mutate({
       stationId: currentStation.id,
       userLat: lat,
@@ -201,8 +234,6 @@ export default function Game() {
       sessionId: currentSession.id,
     });
   };
-
-
 
   // Handle reveal location
   const handleRevealLocation = () => {
@@ -217,7 +248,7 @@ export default function Game() {
   const handleGameComplete = () => {
     if (currentStation && lastGuess && currentSession) {
       const totalRoundDistance = currentRoundDistance + lastGuess.distance;
-      
+
       saveResultMutation.mutate({
         stationId: currentStation.id,
         attempts,
@@ -225,15 +256,18 @@ export default function Game() {
         totalRoundDistance,
         completed: lastGuess.isWin ? 1 : 0,
       });
-      
+
       // Wait for score calculation, then complete game in session
       setTimeout(() => {
         if (currentRoundScore !== null) {
-          completeGameMutation.mutate({ sessionId: currentSession.id, roundScore: currentRoundScore });
+          completeGameMutation.mutate({
+            sessionId: currentSession.id,
+            roundScore: currentRoundScore,
+          });
         }
       }, 100);
     }
-    
+
     // Don't automatically start new game - let the session complete handler manage this
   };
 
@@ -247,7 +281,9 @@ export default function Game() {
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
           <Loader2 className="w-16 h-16 animate-spin mx-auto mb-4 text-blue-600" />
-          <h3 className="text-xl font-semibold text-slate-900 mb-2">Loading OVGuesser</h3>
+          <h3 className="text-xl font-semibold text-slate-900 mb-2">
+            Loading OVGuesser
+          </h3>
           <p className="text-slate-600">Preparing Dutch train stations...</p>
         </div>
       </div>
@@ -258,7 +294,9 @@ export default function Game() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
-          <h3 className="text-xl font-semibold text-slate-900 mb-2">No stations available</h3>
+          <h3 className="text-xl font-semibold text-slate-900 mb-2">
+            No stations available
+          </h3>
           <p className="text-slate-600">Failed to load train station data.</p>
         </div>
       </div>
@@ -268,32 +306,34 @@ export default function Game() {
   return (
     <div className="relative w-full h-screen overflow-hidden">
       {/* Game Header */}
-      <GameHeader 
+      <GameHeader
         stationName={currentStation.name}
         attempts={attempts}
         onNewGame={startNewGame}
         lastResult={showResult ? lastGuess : null}
         onRevealLocation={handleRevealLocation}
         currentScore={currentScore}
-        sessionProgress={currentSession ? {
-          current: currentSession.gamesCompleted + 1,
-          total: 5,
-          totalAttempts: currentSession.totalAttempts,
-          totalDistance: currentSession.totalDistance,
-          totalScore: currentSession.totalScore
-        } : undefined}
+        sessionProgress={
+          currentSession
+            ? {
+                current: currentSession.gamesCompleted + 1,
+                total: 5,
+                totalAttempts: currentSession.totalAttempts,
+                totalDistance: currentSession.totalDistance,
+                totalScore: currentSession.totalScore,
+              }
+            : undefined
+        }
       />
 
       {/* Game Map */}
-      <GameMap 
+      <GameMap
         onMapClick={handleMapClick}
         userMarker={userMarkerPosition}
         stationMarker={stationMarkerPosition}
         previousGuesses={previousGuesses}
         isLoading={guessMutation.isPending}
       />
-
-
 
       {/* Win Modal */}
       {showWin && lastGuess && currentStation && (
