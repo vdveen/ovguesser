@@ -68,9 +68,14 @@ export default function GameHeader({
             </div>
             {sessionProgress && (
               <div className="text-xs text-slate-600 text-right">
-                <p>Spel {sessionProgress.current}/5</p>
-                <p className="text-amber-600 font-bold">
-                  Score: {currentScore.toLocaleString()}
+                <p>
+                  Ronde <b>{sessionProgress.current}/5</b>
+                </p>
+                <p>
+                  Score: <b>{currentScore.toLocaleString()}</b>
+                </p>
+                <p>
+                  Totaal: <b>{sessionProgress.totalScore.toLocaleString()} </b>
                 </p>
               </div>
             )}
@@ -166,8 +171,6 @@ export default function GameHeader({
               </Button>
             </div>
           )}
-
-          
 
           {/* Attribution - hidden on mobile */}
           <div className="hidden md:block  pt-4 text-center">

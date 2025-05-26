@@ -1,9 +1,9 @@
-import { 
-  trainStations, 
-  gameStats, 
+import {
+  trainStations,
+  gameStats,
   gameResults,
   gameSessions,
-  type TrainStation, 
+  type TrainStation,
   type InsertTrainStation,
   type GameStats,
   type InsertGameStats,
@@ -11,7 +11,7 @@ import {
   type InsertGameResult,
   type GameSession,
   type InsertGameSession,
-  type StationFeature 
+  type StationFeature,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -32,7 +32,10 @@ export interface IStorage {
 
   // Game session methods
   createGameSession(): Promise<GameSession>;
-  updateGameSession(id: number, session: Partial<GameSession>): Promise<GameSession>;
+  updateGameSession(
+    id: number,
+    session: Partial<GameSession>,
+  ): Promise<GameSession>;
   getCurrentGameSession(): Promise<GameSession | undefined>;
   completeGameSession(id: number): Promise<GameSession>;
 }
@@ -74,7 +77,9 @@ export class MemStorage implements IStorage {
     return stations[randomIndex];
   }
 
-  async createStation(insertStation: InsertTrainStation): Promise<TrainStation> {
+  async createStation(
+    insertStation: InsertTrainStation,
+  ): Promise<TrainStation> {
     const id = this.currentStationId++;
     const station: TrainStation = { ...insertStation, id };
     this.stations.set(id, station);
@@ -141,7 +146,10 @@ export class MemStorage implements IStorage {
     return session;
   }
 
-  async updateGameSession(id: number, sessionUpdate: Partial<GameSession>): Promise<GameSession> {
+  async updateGameSession(
+    id: number,
+    sessionUpdate: Partial<GameSession>,
+  ): Promise<GameSession> {
     const session = this.gameSessions.get(id);
     if (!session) throw new Error("Session not found");
 
@@ -171,20 +179,9 @@ export class MemStorage implements IStorage {
 
   calculateRoundScore(attempts: number, finalDistance: number): number {
     const baseScore = 5000;
-    const attemptPenalty = (attempts - 1) * 300; // 300 points per additional attempt  
+    const attemptPenalty = (attempts - 1) * 300; // 300 points per additional attempt
     const distancePenalty = Math.floor(finalDistance / 100); // 1 point per 100m distance
     return Math.max(0, baseScore - attemptPenalty - distancePenalty);
-
-    // Deduct 750 points for each extra attempt beyond the first
-    const attemptPenalty = (attempts - 1) * 750;
-
-    // Deduct points based on final distance (meters / 100)
-    const distancePenalty = Math.floor(finalDistance / 100);
-
-    // Calculate final score, minimum 0
-    const finalScore = Math.max(0, baseScore - attemptPenalty - distancePenalty);
-
-    return finalScore;
   }
 }
 
