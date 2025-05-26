@@ -56,19 +56,28 @@ export default function GameHeader({
 
   useEffect(() => {
     if (currentScore !== previousScore) {
-      if (currentScore > previousScore) {
-        setScoreFlash('green');
-      } else if (currentScore < previousScore) {
-        setScoreFlash('red');
-      }
+      // First reset any existing flash
+      setScoreFlash('none');
       
-      const timer = setTimeout(() => {
-        setScoreFlash('none');
-      }, 500);
+      // Small delay to ensure the reset takes effect
+      const flashTimer = setTimeout(() => {
+        if (currentScore > previousScore) {
+          setScoreFlash('green');
+        } else if (currentScore < previousScore) {
+          setScoreFlash('red');
+        }
+        
+        // Reset back to none after animation
+        const resetTimer = setTimeout(() => {
+          setScoreFlash('none');
+        }, 500);
+        
+        return () => clearTimeout(resetTimer);
+      }, 50);
 
       setPreviousScore(currentScore);
       
-      return () => clearTimeout(timer);
+      return () => clearTimeout(flashTimer);
     }
   }, [currentScore, previousScore]);
 
