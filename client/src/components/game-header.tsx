@@ -16,7 +16,6 @@ import {
   SkipForward,
   Trophy,
 } from "lucide-react";
-import type { GameStats } from "@shared/schema";
 import { formatDistance, getAccuracyRating } from "@/lib/distance";
 
 interface GameResult {
@@ -27,7 +26,6 @@ interface GameResult {
 interface GameHeaderProps {
   stationName: string;
   attempts: number;
-  stats?: GameStats;
   onNewGame: () => void;
   lastResult?: GameResult | null;
   onRevealLocation?: () => void;
@@ -44,7 +42,6 @@ interface GameHeaderProps {
 export default function GameHeader({
   stationName,
   attempts,
-  stats,
   onNewGame,
   lastResult,
   onRevealLocation,
@@ -73,7 +70,7 @@ export default function GameHeader({
               <div className="text-xs text-slate-600 text-right">
                 <p>Spel {sessionProgress.current}/5</p>
                 <p className="text-amber-600 font-bold">
-                  Score: {sessionProgress.totalScore.toLocaleString()}
+                  Score: {currentScore.toLocaleString()}
                 </p>
               </div>
             )}
@@ -170,29 +167,7 @@ export default function GameHeader({
             </div>
           )}
 
-          {/* Game Stats */}
-
-          {/* Stats Display (Desktop) */}
-          {stats && (
-            <div className="hidden md:block pt-4 border-t border-slate-200">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <div className="text-slate-600">Stations geraden</div>
-                  <div className="font-semibold text-slate-900">
-                    {stats.totalGames}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-slate-600">Laagste afstand</div>
-                  <div className="font-semibold text-slate-900">
-                    {stats.bestDistance
-                      ? formatDistance(stats.bestDistance)
-                      : "∞"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          
 
           {/* Attribution - hidden on mobile */}
           <div className="hidden md:block  pt-4 text-center">

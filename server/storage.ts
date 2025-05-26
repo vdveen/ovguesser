@@ -169,14 +169,14 @@ export class MemStorage implements IStorage {
     return await this.createGameResult(result);
   }
 
-  calculateRoundScore(attempts: number, totalRoundDistance: number): number {
+  calculateRoundScore(attempts: number, finalDistance: number): number {
     const baseScore = 5000;
 
     // Deduct 750 points for each extra attempt beyond the first
     const attemptPenalty = (attempts - 1) * 750;
 
-    // Deduct points based on total distance (meters / 50)
-    const distancePenalty = Math.floor(totalRoundDistance / 50);
+    // Deduct points based on final distance (meters / 100)
+    const distancePenalty = Math.floor(finalDistance / 100);
 
     // Calculate final score, minimum 0
     const finalScore = Math.max(0, baseScore - attemptPenalty - distancePenalty);
