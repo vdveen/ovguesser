@@ -66,18 +66,19 @@ export default function GameHeader({
         } else if (currentScore < previousScore) {
           setScoreFlash('red');
         }
-        
-        // Reset back to none after animation
-        const resetTimer = setTimeout(() => {
-          setScoreFlash('none');
-        }, 500);
-        
-        return () => clearTimeout(resetTimer);
       }, 50);
+
+      // Reset back to none after animation
+      const resetTimer = setTimeout(() => {
+        setScoreFlash('none');
+      }, 800);
 
       setPreviousScore(currentScore);
       
-      return () => clearTimeout(flashTimer);
+      return () => {
+        clearTimeout(flashTimer);
+        clearTimeout(resetTimer);
+      };
     }
   }, [currentScore, previousScore]);
 
