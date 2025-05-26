@@ -171,6 +171,9 @@ export class MemStorage implements IStorage {
 
   calculateRoundScore(attempts: number, finalDistance: number): number {
     const baseScore = 5000;
+    const attemptPenalty = (attempts - 1) * 300; // 300 points per additional attempt  
+    const distancePenalty = Math.floor(finalDistance / 100); // 1 point per 100m distance
+    return Math.max(0, baseScore - attemptPenalty - distancePenalty);
 
     // Deduct 750 points for each extra attempt beyond the first
     const attemptPenalty = (attempts - 1) * 750;

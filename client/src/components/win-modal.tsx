@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Play, Share, X } from "lucide-react";
+import { Trophy, Play, X } from "lucide-react";
 
 interface WinModalProps {
   stationName: string;
@@ -141,22 +141,6 @@ export default function WinModal({
   onNewGame,
   onClose,
 }: WinModalProps) {
-  const handleShare = async () => {
-    const text = `Ik heb ${totalScore.toLocaleString()} punten gehaald op OVGuesser.nl! 🚂`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ text });
-      } catch (error) {
-        // Fallback to clipboard
-        navigator.clipboard.writeText(text);
-      }
-    } else {
-      // Fallback to clipboard
-      navigator.clipboard.writeText(text);
-    }
-  };
-
   return (
     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[1001] p-4">
       <Card className="w-full max-w-md mx-auto shadow-2xl">
@@ -214,11 +198,6 @@ export default function WinModal({
             >
               <Play className="w-4 h-4 mr-2" />
               Volgend Station
-            </Button>
-
-            <Button onClick={handleShare} variant="outline">
-              <Share className="w-4 h-4 mr-2" />
-              Deel Resultaat
             </Button>
           </div>
         </CardContent>
