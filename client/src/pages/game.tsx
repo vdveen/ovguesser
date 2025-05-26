@@ -72,15 +72,16 @@ export default function Game() {
     onSuccess: (result: GuessResult) => {
       setLastGuess(result);
       
-      // Update round distance
-      const newRoundDistance = currentRoundDistance + result.distance;
-      setCurrentRoundDistance(newRoundDistance);
-      
-      // Calculate and update current score
-      const attemptPenalty = (result.attempt - 1) * 750;
-      const distancePenalty = Math.floor(newRoundDistance / 50);
+      // Calculate current score based on attempts and final distance
+      // 750 points deducted per attempt, distance/100 deducted for final distance
+      const attemptPenalty = (result.attempt - 1) * 750; // No penalty for first attempt
+      const distancePenalty = Math.floor(result.distance / 100);
       const newScore = Math.max(0, 5000 - attemptPenalty - distancePenalty);
       setCurrentScore(newScore);
+      
+      // Update round distance (cumulative for session tracking)
+      const newRoundDistance = currentRoundDistance + result.distance;
+      setCurrentRoundDistance(newRoundDistance);
       
       // Add current guess to previous guesses if not winning
       if (!result.isWin && userMarkerPosition) {
@@ -159,7 +160,7 @@ export default function Game() {
     setCurrentStation(null); // Clear current station immediately
     setCurrentRoundDistance(0);
     setCurrentRoundScore(null);
-    setCurrentScore(5000);
+    setCurrentScore(5000); // Start each round with 5000 points
     
     console.log('Starting new game...');
     
