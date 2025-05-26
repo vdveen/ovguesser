@@ -59,21 +59,21 @@ export default function GameHeader({
     <div className="absolute top-4 left-4 right-4 z-[1000] md:left-6 md:right-auto md:top-6">
       <Card className="bg-white/95 backdrop-blur-sm border border-slate-200 shadow-lg max-w-md">
         <CardContent className="p-4 md:p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Train className="w-4 h-4 text-white" />
-            </div>
-            <div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Train className="w-4 h-4 text-white" />
+              </div>
               <h1 className="text-xl md:text-2xl font-bold text-slate-900">
                 OVGuesser
               </h1>
-              {sessionProgress && (
-                <div className="text-xs text-slate-600 text-right">
-                  <p>Spel {sessionProgress.current}/5</p>
-                  <p className="text-purple-600 font-medium">{sessionProgress.totalScore.toLocaleString()}</p>
-                </div>
-              )}
             </div>
+            {sessionProgress && (
+              <div className="text-xs text-slate-600 text-right">
+                <p>Spel {sessionProgress.current}/5</p>
+                <p className="text-purple-600 font-medium">{sessionProgress.totalScore.toLocaleString()}</p>
+              </div>
+            )}
           </div>
 
           {/* Station Display */}
