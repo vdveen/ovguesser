@@ -138,8 +138,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { stationId, attempts, finalDistance, totalRoundDistance, completed } = req.body;
 
-      // Calculate score for this round
-      const score = storage.calculateRoundScore(attempts, totalRoundDistance);
+      // Calculate score for this round using final distance (not cumulative)
+      const score = storage.calculateRoundScore(attempts, finalDistance);
 
       const result = {
         stationId,
