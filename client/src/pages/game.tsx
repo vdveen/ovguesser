@@ -89,7 +89,7 @@ export default function Game() {
       setLastGuess(result);
 
       // Calculate current score: start with 5000, deduct based on attempts and distance
-      const attemptPenalty = (result.attempt - 1) * 300; // 300 points per additional attempt
+      const attemptPenalty = (result.attempt - 1) * 500; // 500 points per additional attempt
       const distancePenalty = Math.floor(result.distance / 100); // 1 point per 100m distance
       const newScore = Math.max(0, 5000 - attemptPenalty - distancePenalty);
       setCurrentScore(newScore);
