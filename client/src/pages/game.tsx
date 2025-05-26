@@ -242,22 +242,26 @@ export default function Game() {
       setShowResult(false);
       // Set current score to 0 when location is revealed
       setCurrentScore(0);
-      // Mark this as a completed game with 0 points
-      if (currentStation && currentSession) {
-        const totalRoundDistance = currentRoundDistance + lastGuess.distance;
-        saveResultMutation.mutate({
-          stationId: currentStation.id,
-          attempts,
-          finalDistance: lastGuess.distance,
-          totalRoundDistance,
-          completed: 0, // Not a win since location was revealed
-        });
-        // Complete the game in session with 0 score
-        completeGameMutation.mutate({
-          sessionId: currentSession.id,
-          roundScore: 0,
-        });
-      }
+      // Don't automatically proceed to next game - let user click "Next Station" button
+    }
+  };
+
+  // Handle proceeding to next game after location reveal
+  const handleProceedAfterReveal = () => {
+    if (currentStation && currentSession && lastGuess) {
+      const totalRoundDistance = currentRoundDistance + lastGuess.distance;
+      saveResultMutation.mutate({
+        stationId: currentStation.id,
+        attempts,
+        finalDistance: lastGuess.distance,
+        totalRoundDistance,
+        completed: 0, // Not a win since location was revealed
+      });
+      // Complete the game in session with 0 score
+      completeGameMutation.mutate({
+        sessionId: currentSession.id,
+        roundScore: 0,
+      });
     }
   };
 
@@ -321,8 +325,8 @@ export default function Game() {
       <GameHeader
         stationName={currentStation.name}
         attempts={attempts}
-        onNewGame={startNewGame}
-        lastResult={showResult ? lastGuess : null}
+        onNewGame={locationRevealed ? handleProceedAfterReveal : startNewGame}
+        lastResult={showResult || locationRevealed ? lastGuess : null}
         onRevealLocation={handleRevealLocation}
         locationRevealed={locationRevealed}
         currentScore={currentScore}
