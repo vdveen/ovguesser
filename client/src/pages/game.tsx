@@ -72,10 +72,9 @@ export default function Game() {
     onSuccess: (result: GuessResult) => {
       setLastGuess(result);
       
-      // Calculate current score based on attempts and final distance
-      // 750 points deducted per attempt, distance/100 deducted for final distance
+      // Calculate current score: start with 5000, deduct 750 per attempt and distance/100 per guess
       const attemptPenalty = (result.attempt - 1) * 750; // No penalty for first attempt
-      const distancePenalty = Math.floor(result.distance / 100);
+      const distancePenalty = Math.floor(result.distance / 100); // Penalty for this guess distance
       const newScore = Math.max(0, 5000 - attemptPenalty - distancePenalty);
       setCurrentScore(newScore);
       
