@@ -42,11 +42,7 @@ export default function Game() {
   const [currentRoundScore, setCurrentRoundScore] = useState<number | null>(null);
   const [currentScore, setCurrentScore] = useState(5000);
 
-  // Fetch game statistics
-  const { data: stats } = useQuery({
-    queryKey: ["/api/stats"],
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  
 
   // Fetch new random station mutation
   const fetchStationMutation = useMutation({
@@ -273,7 +269,6 @@ export default function Game() {
       <GameHeader 
         stationName={currentStation.name}
         attempts={attempts}
-        stats={stats}
         onNewGame={startNewGame}
         lastResult={showResult ? lastGuess : null}
         onRevealLocation={handleRevealLocation}
