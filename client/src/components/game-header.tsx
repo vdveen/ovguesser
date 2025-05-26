@@ -68,9 +68,9 @@ export default function GameHeader({
                 OVGuesser
               </h1>
               {sessionProgress && (
-                <div className="text-xs text-slate-600">
-                  <p>Best of 5 - Spel {sessionProgress.current}/5</p>
-                  <p className="text-purple-600 font-medium">Score: {sessionProgress.totalScore.toLocaleString()}</p>
+                <div className="text-xs text-slate-600 text-right">
+                  <p>Spel {sessionProgress.current}/5</p>
+                  <p className="text-purple-600 font-medium">{sessionProgress.totalScore.toLocaleString()}</p>
                 </div>
               )}
             </div>
