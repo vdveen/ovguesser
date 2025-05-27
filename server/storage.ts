@@ -61,7 +61,7 @@ export class ReplitDbStorage implements IStorage {
 
   // Train station methods
   async getAllStations(): Promise<TrainStation[]> {
-    const keys = await this.db.list("station_");
+    const keys = await this.db.list({ prefix: "station_" });
     const stations: TrainStation[] = [];
     
     for (const key of keys) {
@@ -157,7 +157,7 @@ export class ReplitDbStorage implements IStorage {
   }
 
   async getRecentResults(limit: number = 10): Promise<GameResult[]> {
-    const keys = await this.db.list("result_");
+    const keys = await this.db.list({ prefix: "result_" });
     
     // Sort keys by ID (assuming higher IDs are more recent)
     const sortedKeys = keys.sort((a, b) => {
@@ -210,7 +210,7 @@ export class ReplitDbStorage implements IStorage {
 
   async getCurrentGameSession(): Promise<GameSession | undefined> {
     // Get all session keys and find the one with highest ID (most recent)
-    const keys = await this.db.list("session_");
+    const keys = await this.db.list({ prefix: "session_" });
     
     if (keys.length === 0) return undefined;
 
