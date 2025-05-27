@@ -1,5 +1,5 @@
 
-const Database = require("@replit/database");
+import Database from "@replit/database";
 
 async function debugDatabase() {
   const db = new Database();
