@@ -238,42 +238,67 @@ export class ReplitDbStorage implements IStorage {
     return result;
   }
 
+  /**
+   * Gets recent game results. Uses fallback approach due to db.list({prefix}) unreliability.
+   * Note: Lists all keys then filters manually - may have performance implications for very large databases.
+   */
   async getRecentResults(limit: number = 10): Promise<GameResult[]> {
-    const response = await this.db.list({ prefix: "result_" });
-    let keys: string[] = [];
-    
-    if (response && typeof response === 'object' && 'ok' in response) {
-      keys = response.ok ? (response.value || []) : [];
-    } else {
-      keys = Array.isArray(response) ? response : [];
-    }
-    
-    // Sort keys by ID (assuming higher IDs are more recent)
-    const sortedKeys = keys.sort((a, b) => {
-      const idA = parseInt(a.replace("result_", ""));
-      const idB = parseInt(b.replace("result_", ""));
-      return idB - idA; // Descending order
-    });
-
-    const recentKeys = sortedKeys.slice(0, limit);
-    const results: GameResult[] = [];
-
-    for (const key of recentKeys) {
-      const resultResponse = await this.db.get(key);
-      let result = null;
+    try {
+      // First get all keys without prefix, then filter manually due to db.list({prefix}) unreliability
+      const allKeysResponse = await this.db.list();
+      let allKeys: string[] = [];
       
-      if (resultResponse && typeof resultResponse === 'object' && 'ok' in resultResponse) {
-        result = resultResponse.ok ? resultResponse.value : null;
+      if (allKeysResponse && typeof allKeysResponse === 'object' && 'ok' in allKeysResponse) {
+        allKeys = allKeysResponse.ok ? (allKeysResponse.value || []) : [];
       } else {
-        result = resultResponse;
+        allKeys = Array.isArray(allKeysResponse) ? allKeysResponse : [];
       }
       
-      if (result) {
-        results.push(result);
-      }
-    }
+      // Filter for result keys only
+      const resultKeys = allKeys.filter(key => 
+        key.startsWith('result_') && 
+        !key.includes('[object Object]') && 
+        key.length <= 50
+      );
+      
+      console.log(`Found ${resultKeys.length} result keys out of ${allKeys.length} total keys`);
+      
+      // Sort keys by ID (assuming higher IDs are more recent)
+      const sortedKeys = resultKeys.sort((a, b) => {
+        const idA = parseInt(a.replace("result_", ""));
+        const idB = parseInt(b.replace("result_", ""));
+        return idB - idA; // Descending order
+      });
 
-    return results;
+      const recentKeys = sortedKeys.slice(0, limit);
+      const results: GameResult[] = [];
+
+      for (const key of recentKeys) {
+        try {
+          const resultResponse = await this.db.get(key);
+          let result = null;
+          
+          if (resultResponse && typeof resultResponse === 'object' && 'ok' in resultResponse) {
+            result = resultResponse.ok ? resultResponse.value : null;
+          } else {
+            result = resultResponse;
+          }
+          
+          if (result && typeof result === 'object' && typeof result.id === 'number') {
+            results.push(result);
+          } else {
+            console.warn(`Invalid result data for key ${key}:`, result);
+          }
+        } catch (error) {
+          console.warn(`Error retrieving result for key ${key}:`, error);
+        }
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Error getting recent results:', error);
+      return [];
+    }
   }
 
   // Game session methods
@@ -313,33 +338,58 @@ export class ReplitDbStorage implements IStorage {
     return updatedSession;
   }
 
+  /**
+   * Gets the most recent game session. Uses fallback approach due to db.list({prefix}) unreliability.
+   * Note: Lists all keys then filters manually - may have performance implications for very large databases.
+   */
   async getCurrentGameSession(): Promise<GameSession | undefined> {
-    // Get all session keys and find the one with highest ID (most recent)
-    const response = await this.db.list({ prefix: "session_" });
-    let keys: string[] = [];
-    
-    if (response && typeof response === 'object' && 'ok' in response) {
-      keys = response.ok ? (response.value || []) : [];
-    } else {
-      keys = Array.isArray(response) ? response : [];
-    }
-    
-    if (keys.length === 0) return undefined;
+    try {
+      // First get all keys without prefix, then filter manually due to db.list({prefix}) unreliability
+      const allKeysResponse = await this.db.list();
+      let allKeys: string[] = [];
+      
+      if (allKeysResponse && typeof allKeysResponse === 'object' && 'ok' in allKeysResponse) {
+        allKeys = allKeysResponse.ok ? (allKeysResponse.value || []) : [];
+      } else {
+        allKeys = Array.isArray(allKeysResponse) ? allKeysResponse : [];
+      }
+      
+      // Filter for session keys only
+      const sessionKeys = allKeys.filter(key => 
+        key.startsWith('session_') && 
+        !key.includes('[object Object]') && 
+        key.length <= 50
+      );
+      
+      console.log(`Found ${sessionKeys.length} session keys out of ${allKeys.length} total keys`);
+      
+      if (sessionKeys.length === 0) return undefined;
 
-    const sortedKeys = keys.sort((a, b) => {
-      const idA = parseInt(a.replace("session_", ""));
-      const idB = parseInt(b.replace("session_", ""));
-      return idB - idA; // Descending order
-    });
+      // Sort keys by ID (assuming higher IDs are more recent)
+      const sortedKeys = sessionKeys.sort((a, b) => {
+        const idA = parseInt(a.replace("session_", ""));
+        const idB = parseInt(b.replace("session_", ""));
+        return idB - idA; // Descending order
+      });
 
-    const mostRecentKey = sortedKeys[0];
-    const sessionResponse = await this.db.get(mostRecentKey);
-    
-    if (sessionResponse && typeof sessionResponse === 'object' && 'ok' in sessionResponse) {
-      return sessionResponse.ok ? sessionResponse.value : undefined;
+      const mostRecentKey = sortedKeys[0];
+      const sessionResponse = await this.db.get(mostRecentKey);
+      
+      if (sessionResponse && typeof sessionResponse === 'object' && 'ok' in sessionResponse) {
+        const session = sessionResponse.ok ? sessionResponse.value : null;
+        if (session && typeof session === 'object' && typeof session.id === 'number') {
+          return session;
+        } else {
+          console.warn(`Invalid session data for key ${mostRecentKey}:`, session);
+          return undefined;
+        }
+      }
+      
+      return sessionResponse || undefined;
+    } catch (error) {
+      console.error('Error getting current game session:', error);
+      return undefined;
     }
-    
-    return sessionResponse || undefined;
   }
 
   async getGameSessionById(id: number): Promise<GameSession | undefined> {
