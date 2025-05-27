@@ -1,0 +1,39 @@
+Hello Replit AI,
+
+You have access to all files in my OVGuesser project. The primary goal is to refactor the existing data storage mechanism in `storage.ts` to make the application compatible with Replit's Autoscale deployments. Currently, it uses an in-memory `MemStorage` class, which causes session data loss during scaling events.
+
+Please replace the `MemStorage` class in `storage.ts` with a new class, named `ReplitDbStorage`. This new class must implement the existing `IStorage` interface (defined in `storage.ts`) and use Replit's built-in Key-Value Database (`@replit/database`) for all data persistence.
+
+**Key Requirements for `ReplitDbStorage`:**
+
+1.  **Technology:**
+    *   Utilize `@replit/database` for all storage operations. Ensure it's correctly imported and initialized.
+
+2.  **Interface Implementation:**
+    *   The `ReplitDbStorage` class must fully implement all methods defined in the `IStorage` interface found within `storage.ts`. Refer to the existing `MemStorage` class for the expected behavior of these methods, adapting them for a key-value store.
+
+3.  **Data Persistence and Key Design:**
+    *   **All data currently handled by `MemStorage` (train stations, game stats, game results, game sessions) must be persisted in Replit DB.**
+    *   Devise a clear key prefixing strategy to organize data (e.g., `station_`, `result_`, `session_`, `gameStats_main`, `id_counters`).
+    *   **ID Generation:** Implement a persistent mechanism for generating unique, sequential IDs for `stations`, `results`, and `sessions` (similar to how `currentStationId`, `currentResultId`, `currentSessionId` are used in `MemStorage`). Store these counters in Replit DB (e.g., under a key like `id_counters`).
+
+4.  **Specific Method Implementations (Highlights & Challenges):**
+    *   **`loadStationsFromGeoJSON(geoJsonData: any)`:** Ensure this method correctly populates stations into Replit DB. Consider how to handle potential duplicate calls (e.g., only add if not present, or allow for a full refresh).
+    *   **`getGameStats()`:** Initialize and store default stats if none exist in the DB.
+    *   **`getRecentResults(limit: number = 10)`:** Implement this to retrieve the most recent game results. Since Replit DB is a key-value store, this will likely involve listing keys, sorting by ID (assuming higher IDs are more recent), and then fetching the top `limit` items.
+    *   **`getCurrentGameSession()`:** The previous implementation in `MemStorage` had a simple way to get the "most recent." Analyze how this is used in the rest of the application (which you can see) and implement the most sensible equivalent for Replit DB. If it's no longer feasible or necessary due to client-side session ID management, you can note this or implement a best-effort approach (e.g., highest session ID). Prioritize consistency with how sessions are handled elsewhere.
+    *   **All other methods from `IStorage`**: Adapt their logic from `MemStorage` to use Replit DB, ensuring data is correctly stored and retrieved.
+
+5.  **Code Quality and Consistency:**
+    *   All DB operations must be asynchronous (`async/await`).
+    *   Maintain consistency with the existing coding style, error handling patterns, and data structures (like those defined in `@shared/schema`, which you can access).
+    *   Ensure the final `storage.ts` exports an instance of `ReplitDbStorage` (i.e., `export const storage = new ReplitDbStorage();`).
+
+6.  **Dependencies:**
+    *   Ensure `@replit/database` is correctly referenced. If it needs to be added to `package.json`, please note this or perform the addition if you have the capability.
+
+**Your Task:**
+
+Modify the `storage.ts` file to implement the `ReplitDbStorage` class as described above, replacing the `MemStorage` implementation. Ensure the application's data handling becomes stateless and reliable for Autoscale environments. Please provide the complete, updated `storage.ts` file.
+
+Leverage your access to the entire codebase to understand how `storage.ts` interacts with other components (e.g., API routes, frontend components via API calls) and ensure the changes are compatible. If you identify any necessary changes in other files for this refactor to work correctly, please point them out.
