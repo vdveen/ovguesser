@@ -102,7 +102,9 @@ export class ReplitDbStorage implements IStorage {
       let stations: TrainStation[] = [];
 
       if (response && typeof response === 'object' && 'ok' in response) {
-        stations = response.ok && Array.isArray(response.value) ? response.value : [];
+        if (response.ok && Array.isArray(response.value)) {
+          stations = response.value;
+        }
       } else if (Array.isArray(response)) {
         stations = response; // Fallback for direct value
       }
