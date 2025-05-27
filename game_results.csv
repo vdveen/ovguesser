@@ -1,3 +1,8 @@
 Timestamp,Station,Attempts,Distance_m,Score,Completed
 2025-05-27T06:57:43.079Z,"Ravenstein",15,392,797,true
 2025-05-27T06:57:47.654Z,"Boskoop Snijdelwijk",2,15841,4542,false
+2025-05-27T07:10:24.085Z,"Geleen Oost",2,103979,3661,false
+2025-05-27T07:10:24.767Z,"Geleen Oost",2,103979,3661,false
+2025-05-27T07:10:33.390Z,"Rotterdam Centraal",2,154,4699,true
+2025-05-27T07:10:39.685Z,"'s-Hertogenbosch",2,16296,4538,false
+2025-05-27T07:10:46.827Z,"Rotterdam Centraal",2,3260,4668,false
