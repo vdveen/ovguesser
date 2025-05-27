@@ -93,24 +93,28 @@ export class ReplitDbStorage implements IStorage {
   // Train station methods
   async getAllStations(): Promise<TrainStation[]> {
     try {
-      const response = await this.db.list({ prefix: "station_" });
-      let keys: string[] = [];
+      // First try to get all keys without prefix, then filter
+      const allKeysResponse = await this.db.list();
+      let allKeys: string[] = [];
       
-      if (response && typeof response === 'object' && 'ok' in response) {
-        keys = response.ok ? (response.value || []) : [];
+      if (allKeysResponse && typeof allKeysResponse === 'object' && 'ok' in allKeysResponse) {
+        allKeys = allKeysResponse.ok ? (allKeysResponse.value || []) : [];
       } else {
-        keys = Array.isArray(response) ? response : [];
+        allKeys = Array.isArray(allKeysResponse) ? allKeysResponse : [];
       }
+      
+      // Filter for station keys only
+      const stationKeys = allKeys.filter(key => 
+        key.startsWith('station_') && 
+        !key.includes('[object Object]') && 
+        key.length <= 50
+      );
+      
+      console.log(`Found ${stationKeys.length} station keys out of ${allKeys.length} total keys`);
       
       const stations: TrainStation[] = [];
       
-      for (const key of keys) {
-        // Skip corrupted keys with [object Object] or invalid formats
-        if (key.includes('[object Object]') || key.length > 50 || !key.startsWith('station_')) {
-          console.warn(`Skipping corrupted/invalid station key: ${key.substring(0, 50)}${key.length > 50 ? '...' : ''}`);
-          continue;
-        }
-        
+      for (const key of stationKeys) {
         try {
           const stationResponse = await this.db.get(key);
           let station = null;
@@ -131,6 +135,7 @@ export class ReplitDbStorage implements IStorage {
         }
       }
       
+      console.log(`Successfully loaded ${stations.length} stations from database`);
       return stations;
     } catch (error) {
       console.error('Error getting all stations:', error);
