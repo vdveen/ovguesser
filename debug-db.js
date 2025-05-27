@@ -29,11 +29,26 @@ async function debugDatabase() {
     
     // Test if any stations exist
     console.log("4. Checking existing stations...");
-    if (Array.isArray(stationKeys) && stationKeys.length > 0) {
-      const firstStation = await db.get(stationKeys[0]);
-      console.log("   First station:", firstStation);
+    if (stationKeys && stationKeys.ok && Array.isArray(stationKeys.value)) {
+      if (stationKeys.value.length > 0) {
+        const firstStation = await db.get(stationKeys.value[0]);
+        console.log("   First station:", firstStation);
+      } else {
+        console.log("   No station keys in prefix result");
+        
+        // Try filtering all keys manually
+        console.log("5. Testing manual filtering...");
+        if (allKeys && allKeys.ok && Array.isArray(allKeys.value)) {
+          const manualStationKeys = allKeys.value.filter(key => key.startsWith('station_'));
+          console.log(`   Found ${manualStationKeys.length} station keys manually`);
+          if (manualStationKeys.length > 0) {
+            const sampleStation = await db.get(manualStationKeys[0]);
+            console.log("   Sample station:", sampleStation);
+          }
+        }
+      }
     } else {
-      console.log("   No stations found");
+      console.log("   Station keys response format unexpected:", stationKeys);
     }
     
     // Check ID counter
