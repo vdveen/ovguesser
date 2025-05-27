@@ -54,7 +54,22 @@ export class ReplitDbStorage implements IStorage {
   private async getNextId(type: 'station' | 'result' | 'session'): Promise<number> {
     const counterKey = `id_counter_${type}`;
     const response = await this.db.get(counterKey);
-    const currentId = response?.ok ? response.value : (response || 0);
+    let currentId = 0;
+    
+    if (response && typeof response === 'object' && 'ok' in response) {
+      // Handle response object format
+      currentId = response.ok ? (response.value || 0) : 0;
+    } else {
+      // Handle direct value format (fallback)
+      currentId = response || 0;
+    }
+    
+    // Ensure currentId is a number
+    if (typeof currentId !== 'number') {
+      console.warn(`Non-numeric ID counter for ${type}:`, currentId);
+      currentId = 0;
+    }
+    
     const nextId = currentId + 1;
     await this.db.set(counterKey, nextId);
     return nextId;
@@ -63,13 +78,33 @@ export class ReplitDbStorage implements IStorage {
   // Train station methods
   async getAllStations(): Promise<TrainStation[]> {
     const response = await this.db.list({ prefix: "station_" });
-    const keys = response.ok ? response.value : [];
+    let keys: string[] = [];
+    
+    if (response && typeof response === 'object' && 'ok' in response) {
+      keys = response.ok ? (response.value || []) : [];
+    } else {
+      keys = Array.isArray(response) ? response : [];
+    }
+    
     const stations: TrainStation[] = [];
     
     for (const key of keys) {
+      // Skip corrupted keys with [object Object]
+      if (key.includes('[object Object]')) {
+        console.warn(`Skipping corrupted station key: ${key}`);
+        continue;
+      }
+      
       const stationResponse = await this.db.get(key);
-      const station = stationResponse?.ok ? stationResponse.value : stationResponse;
-      if (station) {
+      let station = null;
+      
+      if (stationResponse && typeof stationResponse === 'object' && 'ok' in stationResponse) {
+        station = stationResponse.ok ? stationResponse.value : null;
+      } else {
+        station = stationResponse;
+      }
+      
+      if (station && typeof station === 'object' && station.id) {
         stations.push(station);
       }
     }
@@ -80,7 +115,12 @@ export class ReplitDbStorage implements IStorage {
   async getStationById(id: number): Promise<TrainStation | undefined> {
     const key = `station_${id}`;
     const response = await this.db.get(key);
-    return response?.ok ? response.value : response;
+    
+    if (response && typeof response === 'object' && 'ok' in response) {
+      return response.ok ? response.value : undefined;
+    }
+    
+    return response || undefined;
   }
 
   async getRandomStation(): Promise<TrainStation | undefined> {
@@ -128,7 +168,13 @@ export class ReplitDbStorage implements IStorage {
   async getGameStats(): Promise<GameStats | undefined> {
     const key = "gameStats_main";
     const response = await this.db.get(key);
-    let stats = response?.ok ? response.value : response;
+    let stats = null;
+    
+    if (response && typeof response === 'object' && 'ok' in response) {
+      stats = response.ok ? response.value : null;
+    } else {
+      stats = response;
+    }
     
     if (!stats) {
       stats = {
@@ -163,7 +209,13 @@ export class ReplitDbStorage implements IStorage {
 
   async getRecentResults(limit: number = 10): Promise<GameResult[]> {
     const response = await this.db.list({ prefix: "result_" });
-    const keys = response.ok ? response.value : [];
+    let keys: string[] = [];
+    
+    if (response && typeof response === 'object' && 'ok' in response) {
+      keys = response.ok ? (response.value || []) : [];
+    } else {
+      keys = Array.isArray(response) ? response : [];
+    }
     
     // Sort keys by ID (assuming higher IDs are more recent)
     const sortedKeys = keys.sort((a, b) => {
@@ -177,7 +229,14 @@ export class ReplitDbStorage implements IStorage {
 
     for (const key of recentKeys) {
       const resultResponse = await this.db.get(key);
-      const result = resultResponse?.ok ? resultResponse.value : resultResponse;
+      let result = null;
+      
+      if (resultResponse && typeof resultResponse === 'object' && 'ok' in resultResponse) {
+        result = resultResponse.ok ? resultResponse.value : null;
+      } else {
+        result = resultResponse;
+      }
+      
       if (result) {
         results.push(result);
       }
@@ -208,7 +267,14 @@ export class ReplitDbStorage implements IStorage {
   ): Promise<GameSession> {
     const key = `session_${id}`;
     const response = await this.db.get(key);
-    const session = response?.ok ? response.value : response;
+    let session = null;
+    
+    if (response && typeof response === 'object' && 'ok' in response) {
+      session = response.ok ? response.value : null;
+    } else {
+      session = response;
+    }
+    
     if (!session) throw new Error("Session not found");
 
     const updatedSession = { ...session, ...sessionUpdate };
@@ -219,7 +285,13 @@ export class ReplitDbStorage implements IStorage {
   async getCurrentGameSession(): Promise<GameSession | undefined> {
     // Get all session keys and find the one with highest ID (most recent)
     const response = await this.db.list({ prefix: "session_" });
-    const keys = response.ok ? response.value : [];
+    let keys: string[] = [];
+    
+    if (response && typeof response === 'object' && 'ok' in response) {
+      keys = response.ok ? (response.value || []) : [];
+    } else {
+      keys = Array.isArray(response) ? response : [];
+    }
     
     if (keys.length === 0) return undefined;
 
@@ -231,19 +303,36 @@ export class ReplitDbStorage implements IStorage {
 
     const mostRecentKey = sortedKeys[0];
     const sessionResponse = await this.db.get(mostRecentKey);
-    return sessionResponse?.ok ? sessionResponse.value : sessionResponse;
+    
+    if (sessionResponse && typeof sessionResponse === 'object' && 'ok' in sessionResponse) {
+      return sessionResponse.ok ? sessionResponse.value : undefined;
+    }
+    
+    return sessionResponse || undefined;
   }
 
   async getGameSessionById(id: number): Promise<GameSession | undefined> {
     const key = `session_${id}`;
     const response = await this.db.get(key);
-    return response?.ok ? response.value : response;
+    
+    if (response && typeof response === 'object' && 'ok' in response) {
+      return response.ok ? response.value : undefined;
+    }
+    
+    return response || undefined;
   }
 
   async completeGameSession(id: number): Promise<GameSession> {
     const key = `session_${id}`;
     const response = await this.db.get(key);
-    const session = response?.ok ? response.value : response;
+    let session = null;
+    
+    if (response && typeof response === 'object' && 'ok' in response) {
+      session = response.ok ? response.value : null;
+    } else {
+      session = response;
+    }
+    
     if (!session) throw new Error("Session not found");
 
     const completedSession = { ...session, isCompleted: 1 };
