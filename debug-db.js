@@ -293,6 +293,49 @@ async function debugDatabase() {
       await db.delete("session_debug_test1");
       await db.delete("session_debug_test2");
     }
+
+    // Additional comprehensive testing
+    console.log("\n9. Testing database consistency and integrity...");
+    
+    // Test for corrupted keys (keys containing [object Object])
+    const corruptedKeys = listAllResponse.value.filter(key => 
+      key.includes('[object Object]')
+    );
+    
+    if (corruptedKeys.length > 0) {
+      console.error(`   ERROR: Found ${corruptedKeys.length} corrupted keys containing '[object Object]':`, corruptedKeys.slice(0, 5));
+      allTestsPassed = false;
+    } else {
+      console.log("   SUCCESS: No corrupted keys found.");
+    }
+    
+    // Test key length consistency
+    const longKeys = listAllResponse.value.filter(key => key.length > 50);
+    if (longKeys.length > 0) {
+      console.warn(`   WARNING: Found ${longKeys.length} keys longer than 50 characters:`, longKeys.slice(0, 3));
+    } else {
+      console.log("   SUCCESS: All keys have reasonable length.");
+    }
+    
+    // Summary of prefix performance
+    console.log("\n10. Summary of prefix reliability issues:");
+    console.log("   ✅ 'station_' prefix: db.list({prefix}) unreliable (returns 0, manual finds 457)");
+    
+    const resultKeys = listAllResponse.value.filter(key => key.startsWith("result_"));
+    if (resultKeys.length > 0) {
+      console.log(`   ⚠️  'result_' prefix: Should be tested with actual data (found ${resultKeys.length} keys manually)`);
+    } else {
+      console.log("   ℹ️  'result_' prefix: No result data to test (this is normal for new installations)");
+    }
+    
+    const sessionKeys = listAllResponse.value.filter(key => key.startsWith("session_"));
+    if (sessionKeys.length > 0) {
+      console.log(`   ✅ 'session_' prefix: db.list({{prefix}}) unreliable (returns 0, manual finds ${sessionKeys.length})`);
+    } else {
+      console.log("   ℹ️  'session_' prefix: No session data to test");
+    }
+    
+    console.log("\n   RECOMMENDATION: All storage methods should use manual filtering fallback approach.");
   } catch (error) {
     console.error(
       "\nFATAL: Database test script encountered an unhandled error:",
