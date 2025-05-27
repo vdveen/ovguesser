@@ -109,8 +109,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Calculated distance: ${distance}m, isWin: ${isWin}`);
 
       // Update session with this attempt
-      const session = await storage.getCurrentGameSession();
-      if (session && session.id === sessionId) {
+      const session = await storage.getGameSessionById(sessionId);
+      if (session) {
         await storage.updateGameSession(sessionId, {
           totalAttempts: session.totalAttempts + 1,
           totalDistance: session.totalDistance + distance,
@@ -247,9 +247,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const sessionId = parseInt(req.params.id);
       const { roundScore } = req.body;
-      const session = await storage.getCurrentGameSession();
+      const session = await storage.getGameSessionById(sessionId);
 
-      if (!session || session.id !== sessionId) {
+      if (!session) {
         return res.status(404).json({ error: "Session not found" });
       }
 

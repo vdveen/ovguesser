@@ -37,6 +37,7 @@ export interface IStorage {
     session: Partial<GameSession>,
   ): Promise<GameSession>;
   getCurrentGameSession(): Promise<GameSession | undefined>;
+  getGameSessionById(id: number): Promise<GameSession | undefined>;
   completeGameSession(id: number): Promise<GameSession>;
 }
 
@@ -48,7 +49,6 @@ export class MemStorage implements IStorage {
   private currentStationId: number;
   private currentResultId: number;
   private currentSessionId: number;
-  private activeSessionId: number | null;
 
   constructor() {
     this.stations = new Map();
@@ -58,7 +58,6 @@ export class MemStorage implements IStorage {
     this.currentStationId = 1;
     this.currentResultId = 1;
     this.currentSessionId = 1;
-    this.activeSessionId = null;
   }
 
   async getAllStations(): Promise<TrainStation[]> {
@@ -142,7 +141,6 @@ export class MemStorage implements IStorage {
       totalScore: 0,
     };
     this.gameSessions.set(id, session);
-    this.activeSessionId = id;
     return session;
   }
 
@@ -159,8 +157,13 @@ export class MemStorage implements IStorage {
   }
 
   async getCurrentGameSession(): Promise<GameSession | undefined> {
-    if (!this.activeSessionId) return undefined;
-    return this.gameSessions.get(this.activeSessionId);
+    // Return the most recently created session for backward compatibility
+    const sessions = Array.from(this.gameSessions.values());
+    return sessions[sessions.length - 1];
+  }
+
+  async getGameSessionById(id: number): Promise<GameSession | undefined> {
+    return this.gameSessions.get(id);
   }
 
   async completeGameSession(id: number): Promise<GameSession> {
