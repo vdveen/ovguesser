@@ -58,15 +58,30 @@ export class ReplitDbStorage implements IStorage {
     
     if (response && typeof response === 'object' && 'ok' in response) {
       // Handle response object format
-      currentId = response.ok ? (response.value || 0) : 0;
+      const rawValue = response.ok ? response.value : null;
+      if (typeof rawValue === 'number') {
+        currentId = rawValue;
+      } else if (typeof rawValue === 'string') {
+        const parsed = parseInt(rawValue, 10);
+        currentId = isNaN(parsed) ? 0 : parsed;
+      } else {
+        currentId = 0;
+      }
     } else {
       // Handle direct value format (fallback)
-      currentId = response || 0;
+      if (typeof response === 'number') {
+        currentId = response;
+      } else if (typeof response === 'string') {
+        const parsed = parseInt(response, 10);
+        currentId = isNaN(parsed) ? 0 : parsed;
+      } else {
+        currentId = 0;
+      }
     }
     
-    // Ensure currentId is a number
-    if (typeof currentId !== 'number') {
-      console.warn(`Non-numeric ID counter for ${type}:`, currentId);
+    // Ensure currentId is a valid number
+    if (!Number.isInteger(currentId) || currentId < 0) {
+      console.warn(`Invalid ID counter for ${type}:`, currentId, 'resetting to 0');
       currentId = 0;
     }
     
@@ -77,39 +92,50 @@ export class ReplitDbStorage implements IStorage {
 
   // Train station methods
   async getAllStations(): Promise<TrainStation[]> {
-    const response = await this.db.list({ prefix: "station_" });
-    let keys: string[] = [];
-    
-    if (response && typeof response === 'object' && 'ok' in response) {
-      keys = response.ok ? (response.value || []) : [];
-    } else {
-      keys = Array.isArray(response) ? response : [];
-    }
-    
-    const stations: TrainStation[] = [];
-    
-    for (const key of keys) {
-      // Skip corrupted keys with [object Object]
-      if (key.includes('[object Object]')) {
-        console.warn(`Skipping corrupted station key: ${key}`);
-        continue;
-      }
+    try {
+      const response = await this.db.list({ prefix: "station_" });
+      let keys: string[] = [];
       
-      const stationResponse = await this.db.get(key);
-      let station = null;
-      
-      if (stationResponse && typeof stationResponse === 'object' && 'ok' in stationResponse) {
-        station = stationResponse.ok ? stationResponse.value : null;
+      if (response && typeof response === 'object' && 'ok' in response) {
+        keys = response.ok ? (response.value || []) : [];
       } else {
-        station = stationResponse;
+        keys = Array.isArray(response) ? response : [];
       }
       
-      if (station && typeof station === 'object' && station.id) {
-        stations.push(station);
+      const stations: TrainStation[] = [];
+      
+      for (const key of keys) {
+        // Skip corrupted keys with [object Object] or invalid formats
+        if (key.includes('[object Object]') || key.length > 50 || !key.startsWith('station_')) {
+          console.warn(`Skipping corrupted/invalid station key: ${key.substring(0, 50)}${key.length > 50 ? '...' : ''}`);
+          continue;
+        }
+        
+        try {
+          const stationResponse = await this.db.get(key);
+          let station = null;
+          
+          if (stationResponse && typeof stationResponse === 'object' && 'ok' in stationResponse) {
+            station = stationResponse.ok ? stationResponse.value : null;
+          } else {
+            station = stationResponse;
+          }
+          
+          if (station && typeof station === 'object' && typeof station.id === 'number' && station.name) {
+            stations.push(station);
+          } else {
+            console.warn(`Invalid station data for key ${key}:`, station);
+          }
+        } catch (error) {
+          console.warn(`Error retrieving station for key ${key}:`, error);
+        }
       }
+      
+      return stations;
+    } catch (error) {
+      console.error('Error getting all stations:', error);
+      return [];
     }
-    
-    return stations;
   }
 
   async getStationById(id: number): Promise<TrainStation | undefined> {
