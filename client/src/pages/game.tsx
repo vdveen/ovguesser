@@ -151,6 +151,8 @@ export default function Game() {
     },
     onSuccess: (session) => {
       setCurrentSession(session);
+      // Fetch new station after session is created
+      fetchStationMutation.mutate();
     },
   });
 
@@ -170,15 +172,21 @@ export default function Game() {
         setShowSessionComplete(true);
       } else {
         // Continue to next game if session isn't complete
-        startNewGame();
+        setTimeout(() => {
+          startNewGame();
+        }, 100); // Small delay to ensure UI state is clean
       }
     },
   });
 
   // Start new game
   const startNewGame = () => {
+    console.log("Starting new game...");
+    
+    // Reset all game state
     setShowResult(false);
     setShowWin(false);
+    setShowSessionComplete(false);
     setLastGuess(null);
     setAttempts(1);
     setUserMarkerPosition(null);
@@ -191,15 +199,13 @@ export default function Game() {
     // Always start new rounds with 5000 points (fresh start per round)
     setCurrentScore(5000);
 
-    console.log("Starting new game...");
-
     // Create new session if none exists or if current session is completed
     if (!currentSession || currentSession.gamesCompleted >= 5) {
       createSessionMutation.mutate();
+    } else {
+      // If session exists and is not complete, just fetch new station
+      fetchStationMutation.mutate();
     }
-
-    // Fetch new station
-    fetchStationMutation.mutate();
   };
 
   // Start new session
@@ -250,6 +256,8 @@ export default function Game() {
   const handleProceedAfterReveal = () => {
     if (currentStation && currentSession && lastGuess) {
       const totalRoundDistance = currentRoundDistance + lastGuess.distance;
+      
+      // Save result first
       saveResultMutation.mutate({
         stationId: currentStation.id,
         attempts,
@@ -257,6 +265,7 @@ export default function Game() {
         totalRoundDistance,
         completed: 0, // Not a win since location was revealed
       });
+      
       // Complete the game in session with 0 score
       completeGameMutation.mutate({
         sessionId: currentSession.id,
@@ -270,7 +279,7 @@ export default function Game() {
     if (currentStation && lastGuess && currentSession) {
       const totalRoundDistance = currentRoundDistance + lastGuess.distance;
 
-      // Save result and complete game in one flow
+      // Save result first
       saveResultMutation.mutate({
         stationId: currentStation.id,
         attempts,
