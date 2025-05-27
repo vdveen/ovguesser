@@ -53,7 +53,8 @@ export class ReplitDbStorage implements IStorage {
   // Helper methods for ID management
   private async getNextId(type: 'station' | 'result' | 'session'): Promise<number> {
     const counterKey = `id_counter_${type}`;
-    const currentId = await this.db.get(counterKey) || 0;
+    const response = await this.db.get(counterKey);
+    const currentId = response?.ok ? response.value : (response || 0);
     const nextId = currentId + 1;
     await this.db.set(counterKey, nextId);
     return nextId;
@@ -61,11 +62,13 @@ export class ReplitDbStorage implements IStorage {
 
   // Train station methods
   async getAllStations(): Promise<TrainStation[]> {
-    const keys = await this.db.list({ prefix: "station_" });
+    const response = await this.db.list({ prefix: "station_" });
+    const keys = response.ok ? response.value : [];
     const stations: TrainStation[] = [];
     
     for (const key of keys) {
-      const station = await this.db.get(key);
+      const stationResponse = await this.db.get(key);
+      const station = stationResponse?.ok ? stationResponse.value : stationResponse;
       if (station) {
         stations.push(station);
       }
@@ -76,7 +79,8 @@ export class ReplitDbStorage implements IStorage {
 
   async getStationById(id: number): Promise<TrainStation | undefined> {
     const key = `station_${id}`;
-    return await this.db.get(key);
+    const response = await this.db.get(key);
+    return response?.ok ? response.value : response;
   }
 
   async getRandomStation(): Promise<TrainStation | undefined> {
@@ -123,7 +127,8 @@ export class ReplitDbStorage implements IStorage {
   // Game stats methods
   async getGameStats(): Promise<GameStats | undefined> {
     const key = "gameStats_main";
-    let stats = await this.db.get(key);
+    const response = await this.db.get(key);
+    let stats = response?.ok ? response.value : response;
     
     if (!stats) {
       stats = {
@@ -157,7 +162,8 @@ export class ReplitDbStorage implements IStorage {
   }
 
   async getRecentResults(limit: number = 10): Promise<GameResult[]> {
-    const keys = await this.db.list({ prefix: "result_" });
+    const response = await this.db.list({ prefix: "result_" });
+    const keys = response.ok ? response.value : [];
     
     // Sort keys by ID (assuming higher IDs are more recent)
     const sortedKeys = keys.sort((a, b) => {
@@ -170,7 +176,8 @@ export class ReplitDbStorage implements IStorage {
     const results: GameResult[] = [];
 
     for (const key of recentKeys) {
-      const result = await this.db.get(key);
+      const resultResponse = await this.db.get(key);
+      const result = resultResponse?.ok ? resultResponse.value : resultResponse;
       if (result) {
         results.push(result);
       }
@@ -200,7 +207,8 @@ export class ReplitDbStorage implements IStorage {
     sessionUpdate: Partial<GameSession>,
   ): Promise<GameSession> {
     const key = `session_${id}`;
-    const session = await this.db.get(key);
+    const response = await this.db.get(key);
+    const session = response?.ok ? response.value : response;
     if (!session) throw new Error("Session not found");
 
     const updatedSession = { ...session, ...sessionUpdate };
@@ -210,7 +218,8 @@ export class ReplitDbStorage implements IStorage {
 
   async getCurrentGameSession(): Promise<GameSession | undefined> {
     // Get all session keys and find the one with highest ID (most recent)
-    const keys = await this.db.list({ prefix: "session_" });
+    const response = await this.db.list({ prefix: "session_" });
+    const keys = response.ok ? response.value : [];
     
     if (keys.length === 0) return undefined;
 
@@ -221,17 +230,20 @@ export class ReplitDbStorage implements IStorage {
     });
 
     const mostRecentKey = sortedKeys[0];
-    return await this.db.get(mostRecentKey);
+    const sessionResponse = await this.db.get(mostRecentKey);
+    return sessionResponse?.ok ? sessionResponse.value : sessionResponse;
   }
 
   async getGameSessionById(id: number): Promise<GameSession | undefined> {
     const key = `session_${id}`;
-    return await this.db.get(key);
+    const response = await this.db.get(key);
+    return response?.ok ? response.value : response;
   }
 
   async completeGameSession(id: number): Promise<GameSession> {
     const key = `session_${id}`;
-    const session = await this.db.get(key);
+    const response = await this.db.get(key);
+    const session = response?.ok ? response.value : response;
     if (!session) throw new Error("Session not found");
 
     const completedSession = { ...session, isCompleted: 1 };
