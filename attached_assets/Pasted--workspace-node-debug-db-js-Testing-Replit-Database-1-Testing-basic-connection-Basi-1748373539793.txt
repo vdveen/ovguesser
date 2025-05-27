@@ -1,0 +1,56 @@
+~/workspace$ node debug-db.js
+=== Testing Replit Database ===
+1. Testing basic connection...
+   Basic set/get works: false
+2. Testing list method...
+   All keys: {
+  ok: true,
+  value: [
+    'id_counter_result', 'id_counter_session', 'id_counter_station',
+    'station_1',         'station_10',         'station_100',
+    'station_101',       'station_102',        'station_103',
+    'station_104',       'station_105',        'station_106',
+    'station_107',       'station_108',        'station_109',
+    'station_11',        'station_110',        'station_111',
+    'station_112',       'station_113',        'station_114',
+    'station_115',       'station_116',        'station_117',
+    'station_118',       'station_119',        'station_12',
+    'station_120',       'station_121',        'station_122',
+    'station_123',       'station_124',        'station_125',
+    'station_126',       'station_127',        'station_128',
+    'station_129',       'station_13',         'station_130',
+    'station_131',       'station_132',        'station_133',
+    'station_134',       'station_135',        'station_136',
+    'station_137',       'station_138',        'station_139',
+    'station_14',        'station_140',        'station_141',
+    'station_142',       'station_143',        'station_144',
+    'station_145',       'station_146',        'station_147',
+    'station_148',       'station_149',        'station_15',
+    'station_150',       'station_151',        'station_152',
+    'station_153',       'station_154',        'station_155',
+    'station_156',       'station_157',        'station_158',
+    'station_159',       'station_16',         'station_160',
+    'station_161',       'station_162',        'station_163',
+    'station_164',       'station_165',        'station_166',
+    'station_167',       'station_168',        'station_169',
+    'station_17',        'station_170',        'station_171',
+    'station_172',       'station_173',        'station_174',
+    'station_175',       'station_176',        'station_177',
+    'station_178',       'station_179',        'station_18',
+    'station_180',       'station_181',        'station_182',
+    'station_183',       'station_184',        'station_185',
+    'station_186',
+    ... 238 more items
+  ]
+}
+   Keys type: object
+   Is array: false
+3. Testing list with prefix...
+   Station keys: { ok: true, value: [] }
+   Station keys type: object
+   Station keys is array: false
+4. Checking existing stations...
+   No stations found
+5. Checking ID counter...
+   Station ID counter: { ok: true, value: 65 }
+~/workspace$ 
