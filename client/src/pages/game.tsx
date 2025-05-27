@@ -252,29 +252,7 @@ export default function Game() {
     }
   };
 
-  // Handle proceeding to next game after location reveal
-  const handleProceedAfterReveal = () => {
-    if (currentStation && currentSession && lastGuess) {
-      const totalRoundDistance = currentRoundDistance + lastGuess.distance;
-      
-      // Save result first
-      saveResultMutation.mutate({
-        stationId: currentStation.id,
-        attempts,
-        finalDistance: lastGuess.distance,
-        totalRoundDistance,
-        completed: 0, // Not a win since location was revealed
-      });
-      
-      // Complete the game in session with 0 score
-      completeGameMutation.mutate({
-        sessionId: currentSession.id,
-        roundScore: 0,
-      });
-    }
-  };
-
-  // Handle game completion
+  // Handle game completion (unified for both win and reveal scenarios)
   const handleGameComplete = () => {
     if (currentStation && lastGuess && currentSession) {
       const totalRoundDistance = currentRoundDistance + lastGuess.distance;
@@ -288,7 +266,7 @@ export default function Game() {
         completed: lastGuess.isWin ? 1 : 0,
       });
 
-      // Complete the game in session with current score
+      // Complete the game in session with current score (0 if location was revealed)
       completeGameMutation.mutate({
         sessionId: currentSession.id,
         roundScore: currentScore,
@@ -334,7 +312,7 @@ export default function Game() {
       <GameHeader
         stationName={currentStation.name}
         attempts={attempts}
-        onNewGame={locationRevealed ? handleProceedAfterReveal : startNewGame}
+        onNewGame={locationRevealed ? handleGameComplete : startNewGame}
         lastResult={showResult || locationRevealed ? lastGuess : null}
         onRevealLocation={handleRevealLocation}
         locationRevealed={locationRevealed}
