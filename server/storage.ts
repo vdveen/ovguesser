@@ -443,14 +443,25 @@ export class ReplitDbStorage implements IStorage {
   }
 
   async getGameSessionById(id: number): Promise<GameSession | undefined> {
+    console.log(`Looking for session with ID: ${id}`);
     const key = `session_${id}`;
-    const response = await this.db.get(key);
-    
-    if (response && typeof response === 'object' && 'ok' in response) {
-      return response.ok ? response.value : undefined;
+    try {
+      const response = await this.db.get(key);
+      console.log(`Database response for key ${key}:`, response);
+      
+      if (response && typeof response === 'object' && 'ok' in response) {
+        const session = response.ok ? response.value : undefined;
+        console.log(`Session found:`, session);
+        return session;
+      }
+      
+      const session = response || undefined;
+      console.log(`Session (fallback):`, session);
+      return session;
+    } catch (error) {
+      console.error(`Error getting session ${id}:`, error);
+      return undefined;
     }
-    
-    return response || undefined;
   }
 
   async getAllGameSessions(): Promise<GameSession[]> {

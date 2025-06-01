@@ -247,9 +247,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const sessionId = parseInt(req.params.id);
       const { roundScore } = req.body;
+      
+      console.log(`=== COMPLETE GAME REQUEST ===`);
+      console.log(`Session ID: ${sessionId}`);
+      console.log(`Round Score: ${roundScore}`);
+      
+      if (isNaN(sessionId) || sessionId <= 0) {
+        console.error(`Invalid session ID: ${req.params.id}`);
+        return res.status(400).json({ error: "Invalid session ID" });
+      }
+
       const session = await storage.getGameSessionById(sessionId);
+      console.log(`Found session:`, session);
 
       if (!session) {
+        console.error(`Session ${sessionId} not found in database`);
+        
+        // Let's also check if there are any sessions at all
+        const allSessions = await storage.getAllGameSessions();
+        console.log(`Total sessions in database: ${allSessions.length}`);
+        if (allSessions.length > 0) {
+          console.log(`Most recent session IDs:`, allSessions.slice(0, 3).map(s => s.id));
+        }
+        
         return res.status(404).json({ error: "Session not found" });
       }
 
@@ -259,6 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isCompleted: session.gamesCompleted + 1 >= 5
       });
 
+      console.log(`Successfully updated session:`, updatedSession);
       res.json(updatedSession);
     } catch (error) {
       console.error('Failed to complete game in session:', error);
