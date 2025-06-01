@@ -5,6 +5,7 @@ import { gameLogger } from "./logger";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
+import { checkAndCleanup } from "./cleanup";
 
 // Load GeoJSON data on startup
 async function loadStationData() {
@@ -172,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (currentStats) {
         const newTotalGames = currentStats.totalGames + 1;
         const newTotalAttempts = currentStats.totalAttempts + result.attempts;
-        
+
         // Update best distance if this is better or first game
         let newBestDistance = currentStats.bestDistance;
         if (result.completed === 1 && (newBestDistance === null || result.finalDistance < newBestDistance)) {
@@ -190,6 +191,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           averageDistance: updatedAverageDistance,
         });
       }
+
+      // Check if cleanup is needed (run async to not block response)
+      checkAndCleanup().catch(err => console.error('Cleanup error:', err));
 
       res.json({ success: true, score });
     } catch (error) {
