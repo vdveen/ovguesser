@@ -159,21 +159,14 @@ export default function Game() {
   // Complete game in session mutation
   const completeGameMutation = useMutation({
     mutationFn: async (data: { sessionId: number; roundScore: number }) => {
-      console.log("Sending complete-game request for session ID:", data.sessionId);
       const response = await apiRequest(
         "POST",
         `/api/session/${data.sessionId}/complete-game`,
         { roundScore: data.roundScore },
       );
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Complete game failed:", response.status, errorText);
-        throw new Error(`Failed to complete game: ${response.status} - ${errorText}`);
-      }
       return response.json();
     },
     onSuccess: (session) => {
-      console.log("Game completed successfully, updated session:", session);
       setCurrentSession(session);
       if (session.gamesCompleted >= 5) {
         setShowSessionComplete(true);
@@ -183,13 +176,6 @@ export default function Game() {
           startNewGame();
         }, 100); // Small delay to ensure UI state is clean
       }
-    },
-    onError: (error) => {
-      console.error("Failed to complete game:", error);
-      // On error, still try to continue - create a new session
-      setTimeout(() => {
-        startNewGame();
-      }, 100);
     },
   });
 
@@ -269,10 +255,6 @@ export default function Game() {
   // Handle game completion (unified for both win and reveal scenarios)
   const handleGameComplete = () => {
     if (currentStation && lastGuess && currentSession) {
-      console.log("=== COMPLETING GAME ===");
-      console.log("Current session:", currentSession);
-      console.log("Session ID:", currentSession.id);
-      
       const totalRoundDistance = currentRoundDistance + lastGuess.distance;
 
       // Save result first
@@ -288,12 +270,6 @@ export default function Game() {
       completeGameMutation.mutate({
         sessionId: currentSession.id,
         roundScore: currentScore,
-      });
-    } else {
-      console.error("Cannot complete game - missing data:", {
-        currentStation: !!currentStation,
-        lastGuess: !!lastGuess,
-        currentSession: !!currentSession,
       });
     }
   };
