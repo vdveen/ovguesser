@@ -375,7 +375,24 @@ export class ReplitDbStorage implements IStorage {
       totalScore: 0,
     };
     const key = `session_${id}`;
+    
+    console.log(`Creating session with ID ${id} and key ${key}`);
     await this.db.set(key, session);
+    
+    // Verify the session was stored correctly
+    const verification = await this.db.get(key);
+    console.log(`Session verification for ${key}:`, verification);
+    
+    if (verification && typeof verification === 'object' && 'ok' in verification) {
+      if (!verification.ok) {
+        console.error(`Failed to store session ${id} - retrying once`);
+        // Retry once
+        await this.db.set(key, session);
+        const retryVerification = await this.db.get(key);
+        console.log(`Retry verification for ${key}:`, retryVerification);
+      }
+    }
+    
     return session;
   }
 
@@ -450,14 +467,23 @@ export class ReplitDbStorage implements IStorage {
       console.log(`Database response for key ${key}:`, response);
       
       if (response && typeof response === 'object' && 'ok' in response) {
-        const session = response.ok ? response.value : undefined;
-        console.log(`Session found:`, session);
-        return session;
+        if (response.ok && response.value) {
+          console.log(`Session found:`, response.value);
+          return response.value;
+        } else {
+          console.log(`Session not found - database returned ok:false or no value`);
+          return undefined;
+        }
       }
       
-      const session = response || undefined;
-      console.log(`Session (fallback):`, session);
-      return session;
+      // Handle direct value response (fallback)
+      if (response && typeof response === 'object' && response.id) {
+        console.log(`Session found (direct):`, response);
+        return response;
+      }
+      
+      console.log(`Session not found - no valid response`);
+      return undefined;
     } catch (error) {
       console.error(`Error getting session ${id}:`, error);
       return undefined;
