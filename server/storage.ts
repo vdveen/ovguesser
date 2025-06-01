@@ -375,24 +375,8 @@ export class ReplitDbStorage implements IStorage {
       totalScore: 0,
     };
     const key = `session_${id}`;
-    
-    console.log(`Creating session with ID ${id} and key ${key}`);
-    
-    try {
-      const setResponse = await this.db.set(key, session);
-      console.log(`Set response for ${key}:`, setResponse);
-      
-      // If the set operation returned an error response, throw an error
-      if (setResponse && typeof setResponse === 'object' && 'ok' in setResponse && !setResponse.ok) {
-        throw new Error(`Database set operation failed: ${JSON.stringify(setResponse)}`);
-      }
-      
-      console.log(`Successfully created session ${id}`);
-      return session;
-    } catch (error) {
-      console.error(`Error creating session ${id}:`, error);
-      throw new Error(`Failed to create game session: ${error}`);
-    }
+    await this.db.set(key, session);
+    return session;
   }
 
   async updateGameSession(
@@ -459,54 +443,14 @@ export class ReplitDbStorage implements IStorage {
   }
 
   async getGameSessionById(id: number): Promise<GameSession | undefined> {
-    console.log(`Looking for session with ID: ${id}`);
     const key = `session_${id}`;
+    const response = await this.db.get(key);
     
-    // Try multiple times with small delays for database consistency
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        console.log(`Attempt ${attempt} to retrieve session ${id}`);
-        const response = await this.db.get(key);
-        console.log(`Database response for key ${key} (attempt ${attempt}):`, response);
-        
-        if (response && typeof response === 'object' && 'ok' in response) {
-          if (response.ok && response.value) {
-            console.log(`Session found on attempt ${attempt}:`, response.value);
-            return response.value;
-          } else if (attempt < 3) {
-            console.log(`Session not found on attempt ${attempt}, retrying...`);
-            await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms before retry
-            continue;
-          } else {
-            console.log(`Session not found after all attempts - database returned ok:false or no value`);
-            return undefined;
-          }
-        }
-        
-        // Handle direct value response (fallback)
-        if (response && typeof response === 'object' && response.id) {
-          console.log(`Session found (direct) on attempt ${attempt}:`, response);
-          return response;
-        }
-        
-        if (attempt < 3) {
-          console.log(`No valid response on attempt ${attempt}, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms before retry
-        } else {
-          console.log(`Session not found after all attempts - no valid response`);
-          return undefined;
-        }
-      } catch (error) {
-        console.error(`Error getting session ${id} on attempt ${attempt}:`, error);
-        if (attempt < 3) {
-          await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms before retry
-        } else {
-          return undefined;
-        }
-      }
+    if (response && typeof response === 'object' && 'ok' in response) {
+      return response.ok ? response.value : undefined;
     }
     
-    return undefined;
+    return response || undefined;
   }
 
   async getAllGameSessions(): Promise<GameSession[]> {
