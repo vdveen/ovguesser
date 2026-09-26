@@ -9,3 +9,7 @@ Timestamp,Station,Attempts,Distance_m,Score,Completed
 2025-05-27T20:14:36.650Z,"Venlo",5,147,3799,true
 2025-05-27T20:37:25.492Z,"Amsterdam Sloterdijk",1,464,4996,true
 2025-06-01T13:22:01.841Z,"Coevorden",2,115364,3547,false
+2025-08-14T12:14:29.758Z,"Bedum",2,102072,3680,false
+2025-08-14T12:14:31.014Z,"Bedum",2,102072,3680,false
+2025-08-14T12:14:31.180Z,"Bedum",2,102072,3680,false
+2025-08-14T12:22:14.594Z,"Hilversum Sportpark",2,37786,4323,false
