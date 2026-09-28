@@ -123,12 +123,12 @@ test("switches to English and remembers it", async ({ page }) => {
   await open(page, errors);
   await page.getByRole("button", { name: "EN", exact: true }).click();
   await expect(page.getByRole("button", { name: "Free play" })).toBeVisible();
-  await expect(page.locator(".credit")).toHaveText("Made by Anne v/d Veen with Replit and Opus 5.5");
+  await expect(page.locator(".credit")).toHaveText("Made by Anne v/d Veen with Opus 5.5");
   await page.reload();
   await expect(page.getByRole("button", { name: "Free play" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.lang)).toBe("en");
   await page.getByRole("button", { name: "NL", exact: true }).click();
-  await expect(page.locator(".credit")).toHaveText("Gemaakt door Anne v/d Veen met Replit en Opus 5.5");
+  await expect(page.locator(".credit")).toHaveText("Gemaakt door Anne v/d Veen met Opus 5.5");
   expect(errors).toEqual([]);
 });
 
