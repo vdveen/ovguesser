@@ -3,7 +3,7 @@
 //   src/data/rails.json     railway lines (OpenStreetMap, ODbL), filtered and rounded
 // Run with `npm run data`. The build fails if the station list looks wrong.
 import { createHash } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 
 const root = new URL("..", import.meta.url).pathname;
@@ -94,6 +94,7 @@ for (const s of stations) {
 }
 if (problems.length) throw new Error(`Station data problems:\n  ${problems.join("\n  ")}`);
 
+mkdirSync(`${root}src/data`, { recursive: true });
 const stationsJson = JSON.stringify(stations);
 const dataVersion = createHash("sha256").update(stationsJson).digest("hex").slice(0, 10);
 writeFileSync(`${root}src/data/stations.json`, stationsJson);
