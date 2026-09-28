@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OVGuesser rebuild plan</title>
+<style>
+  :root {
+    --ink: #111827; --ink-2: #4b5563; --ink-3: #9ca3af; --line: #e5e7eb; --bg: #fbfbfa; --card: #fff;
+    --ns-blue: #002d72; --ns-yellow: #ffc917; --accent: #2a78d6;
+    --series-1: #2a78d6; --series-2: #eb6834;
+    --good: #0f7a4f; --warn: #b45309; --bad: #b91c1c;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px 80px; }
+  header.hero { background: var(--ns-blue); color: #fff; margin-bottom: 36px; }
+  header.hero .wrap { padding-top: 44px; padding-bottom: 36px; position: relative; }
+  header.hero .sq { position: absolute; top: 0; left: 24px; width: 26px; height: 26px; background: #f3f4f6; }
+  header.hero h1 { margin: 0 0 6px; font-size: 38px; letter-spacing: -.02em; line-height: 1.15; }
+  header.hero p { margin: 0; color: #fff; opacity: .88; max-width: 720px; }
+  header.hero code { background: rgba(255,255,255,.14); color: #fff; }
+  header.hero .meta { margin-top: 14px; font-size: 13px; opacity: .7; }
+  nav.toc { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; margin: 0 0 30px; padding: 12px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+  nav.toc a { color: var(--ink-2); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  h2 { font-size: 26px; letter-spacing: -.01em; margin: 56px 0 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 28px 0 6px; }
+  p, li { color: #1f2937; }
+  a { color: var(--accent); }
+  code { font: 13.5px ui-monospace, SFMono-Regular, Menlo, monospace; background: #f1f2f4; padding: 1px 5px; border-radius: 4px; }
+  pre { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: #0f172a; color: #e2e8f0; padding: 16px 18px; border-radius: 10px; overflow: auto; }
+  pre code { background: none; padding: 0; color: inherit; }
+  .lead { font-size: 18px; color: var(--ink-2); }
+  .callout { background: #fff8e1; border: 1px solid #fde68a; border-radius: 12px; padding: 14px 18px; margin: 18px 0; }
+  .callout.blue { background: #eff6ff; border-color: #bfdbfe; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .card h4 { margin: 0 0 4px; font-size: 15px; }
+  .card p { margin: 0; font-size: 14px; color: var(--ink-2); }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .tile .k { font-size: 13px; color: var(--ink-2); }
+  .tile .v { font-size: 28px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .tile .s { font-size: 12.5px; color: var(--ink-3); }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; margin: 12px 0; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-top: 1px solid var(--line); }
+  th { background: #f6f7f8; font-weight: 600; font-size: 13px; color: var(--ink-2); border-top: 0; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .ev { font-size: 12.5px; color: var(--ink-2); }
+  .tag { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: #eef2ff; color: #3730a3; white-space: nowrap; }
+  .tag.red { background: #fee2e2; color: #991b1b; }
+  .tag.amber { background: #fef3c7; color: #92400e; }
+  .tag.green { background: #dcfce7; color: #166534; }
+  figure { margin: 18px 0; }
+  figure img { width: 100%; border: 1px solid var(--line); border-radius: 10px; display: block; }
+  figcaption { font-size: 13px; color: var(--ink-2); margin-top: 6px; }
+  .shots { display: grid; grid-template-columns: 2.2fr 1fr; gap: 14px; align-items: start; }
+  .demo-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0; }
+  .demo-bar button { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  .demo-bar button[aria-pressed="true"] { background: var(--ns-blue); border-color: var(--ns-blue); color: #fff; }
+  .demo-frame { display: flex; justify-content: center; background: #e5e7eb; border-radius: 14px; padding: 14px; }
+  .demo-frame iframe { border: 0; border-radius: 10px; background: #e8ecef; width: 100%; height: 640px; box-shadow: 0 6px 24px rgba(0,0,0,.12); transition: width .25s; }
+  .demo-frame.phone iframe { width: 390px; height: 780px; border-radius: 28px; border: 10px solid #111827; }
+  .arch { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; }
+  .box { border: 1.5px solid var(--line); border-radius: 12px; background: var(--card); padding: 12px 14px; }
+  .box h4 { margin: 0 0 6px; font-size: 14px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); }
+  .box ul { margin: 0; padding-left: 18px; font-size: 14px; }
+  .box.browser { border-color: #93c5fd; }
+  .box.rail { border-color: #c4b5fd; }
+  .box.ext { border-style: dashed; }
+  .phase { display: grid; grid-template-columns: 56px 1fr; gap: 14px; margin: 14px 0; }
+  .phase .n { width: 44px; height: 44px; border-radius: 10px; background: var(--ns-yellow); color: var(--ns-blue); display: grid; place-items: center; font-weight: 800; font-size: 18px; }
+  .phase h4 { margin: 0 0 4px; font-size: 16px; }
+  .phase p, .phase li { font-size: 14.5px; margin: 0; }
+  .phase ul { margin: 4px 0 0; padding-left: 18px; }
+  .done-when { font-size: 13.5px; color: var(--good); margin-top: 6px !important; }
+  .q { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--ns-yellow); border-radius: 10px; padding: 12px 16px; margin: 10px 0; }
+  .q b { display: block; margin-bottom: 2px; }
+  .q p { margin: 0; font-size: 14.5px; color: var(--ink-2); }
+  /* chart */
+  .viz { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 10px; }
+  .viz-title { font-weight: 600; font-size: 15px; margin: 0; }
+  .viz-sub { font-size: 13px; color: var(--ink-2); margin: 2px 0 8px; }
+  .legend { display: flex; gap: 16px; font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
+  .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+  .viz svg text { font: 12px "Segoe UI", system-ui, sans-serif; fill: var(--ink-2); }
+  .viz .grid line { stroke: #eef0f2; }
+  .viz-tip { position: absolute; pointer-events: none; background: #111827; color: #fff; font-size: 12.5px; padding: 6px 9px; border-radius: 7px; white-space: nowrap; transform: translate(-50%, -115%); display: none; }
+  .calc { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 10px 0 0; font-size: 14px; }
+  .calc input[type=text] { font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; width: 260px; }
+  .calc input[type=range] { width: 200px; accent-color: var(--ns-blue); }
+  .muted { color: var(--ink-2); font-size: 14px; }
+  @media (max-width: 760px) {
+    .grid2, .grid3, .arch, .shots { grid-template-columns: 1fr; }
+    header.hero h1 { font-size: 30px; }
+    .demo-frame iframe { height: 560px; }
+  }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="sq"></div>
+    <h1>OVGuesser rebuild plan</h1>
+    <p>What went wrong in the Replit version, what I'd build instead, how runs get stored in the player's browser, and how it deploys to Railway. There's a working prototype in the middle of this page.</p>
+    <div class="meta">26 September 2026 · based on <code>old_version/</code>, all 135 commits of its history plus the <code>old/replit-agent</code> branch, the attached prompts and screenshots, and the two new GeoJSON files in the repo root</div>
+  </div>
+</header>
+
+<div class="wrap">
+<nav class="toc">
+  <a href="#tldr">Summary</a><a href="#found">What I found</a><a href="#storage-then">The storage problem</a><a href="#arch">Architecture</a>
+  <a href="#data">Data</a><a href="#rules">Rules &amp; scoring</a><a href="#runs">Storing runs</a><a href="#demo">Prototype</a>
+  <a href="#ux">UX &amp; polish</a><a href="#reliability">Reliability</a><a href="#railway">Railway</a><a href="#phases">Phases</a><a href="#questions">Decisions for you</a>
+</nav>
+
+<section id="tldr">
+<p class="lead">The old game was fun and the design ideas were good. It broke for reasons that come from its architecture: a server that kept game state for every player, a key-value store with a 5,000-key cap, and scoring code that lived in two places and disagreed. The rebuild moves the whole game into the browser, stores each player's runs in their own IndexedDB, and turns the server into a small static file host on Railway.</p>
+<div class="grid3">
+  <div class="tile"><div class="k">Server state per player</div><div class="v">none</div><div class="s">was: sessions, results and counters in Replit DB</div></div>
+  <div class="tile"><div class="k">Size of one stored run</div><div class="v">~1 kB</div><div class="s">measured in the prototype, 5 rounds, 3 guesses each</div></div>
+  <div class="tile"><div class="k">Railway layer, gzipped</div><div class="v">200 kB</div><div class="s">was 2.8 MB, and it failed to load in production</div></div>
+</div>
+<p>Plan in one list:</p>
+<ol>
+  <li>Keep what worked: the NS station sign, Dutch copy, five stations per run, 5,000 points per station, grey railway lines on a map without labels, reveal for 0 points, share with a toast.</li>
+  <li>Put the game logic in plain TypeScript functions with unit tests. One scoring function, used everywhere.</li>
+  <li>Ship station data as a static file. The browser computes distances; nothing waits on a server between clicks.</li>
+  <li>Store runs in IndexedDB, one record per run, written after every guess. Reloads resume the run. History, stats, export and import come with it.</li>
+  <li>Deploy one small Node service on Railway with a health check. No database in version 1. Global stats are an optional later phase.</li>
+</ol>
+</section>
+
+<section id="found">
+<h2>What I found in the old version</h2>
+<p>The history covers 24 May to 1 June 2025, with a last CSV snapshot in August. About two thirds of it is UI iteration; you steered the design closely, commit by commit. The last third is a fight with deployment: sessions, then Replit DB, then its key limit. Sixteen commit messages are about scoring alone. Here is what I'd call the root causes, with evidence.</p>
+
+<table>
+<tr><th style="width:34%">Problem</th><th>What happened</th><th style="width:17%">Evidence</th></tr>
+<tr><td><span class="tag red">critical</span> Game sessions lived on the server and weren't tied to a player</td><td><code>getCurrentGameSession()</code> returned the newest session of <em>all</em> players. Sessions first lived in process memory, so on Replit Autoscale a request that hit a different instance got "Session not found". This is the 404 on <code>/api/session/1548/complete-game</code> you saw when lots of people played at once.</td><td class="ev"><code>94adfbb</code> prompt, <code>server/storage.ts</code></td></tr>
+<tr><td><span class="tag red">critical</span> Replit DB used as a relational database</td><td>One key per result, one per session, plus ID counters. The client's <code>{ok, value}</code> wrapper got misread, which produced keys like <code>session_[object Object]11</code>. <code>list({prefix})</code> didn't work reliably, so every read listed <em>all</em> keys. Then the 5,000-key cap was hit, and a cleanup job had to delete old data.</td><td class="ev"><code>5b120cd</code>…<code>b896d60</code>, <code>attached_assets/Pasted--workspace-node-debug-db…</code>, <code>server/cleanup.ts</code></td></tr>
+<tr><td><span class="tag red">critical</span> Scoring existed twice, with different rules</td><td>The client deducted 500 per extra attempt and the server deducted 300. The round total shown to the player came from the client. The CSV log and stored results came from the server. They never matched.</td><td class="ev"><code>game.tsx:92</code> vs <code>storage.ts calculateRoundScore</code></td></tr>
+<tr><td><span class="tag amber">bug</span> Round score could go up after a better guess</td><td>Only the latest guess's distance was deducted, not the sum. Guess 1 at 69 km gives 4,310. Guess 2 at 9.5 km gives 4,405. In <code>b371a60</code> you asked for each attempt's distance to be deducted; the code never did that. The chart in <a href="#rules">Rules &amp; scoring</a> shows it.</td><td class="ev"><code>b371a60</code>, <code>c3350c0</code> prompts</td></tr>
+<tr><td><span class="tag amber">bug</span> "Volgend station" fired twice</td><td>Ending a round started two independent requests. The CSV has Geleen Oost twice within 0.7 s and Bedum three times within 1.5 s.</td><td class="ev"><code>d376b61</code>, <code>game_results.csv</code></td></tr>
+<tr><td><span class="tag amber">bug</span> Railway lines broke in production</td><td>The 2.8 MB GeoJSON existed in two places. When the file was missing, the server's catch-all returned <code>index.html</code>, and the browser failed on <code>JSON.parse</code>.</td><td class="ev"><code>a485c7e</code> prompt, screenshot <code>afbeelding_1748197306563.png</code></td></tr>
+<tr><td><span class="tag amber">bug</span> Any server error crashed the process</td><td>The Express error handler sent a response and then rethrew the error.</td><td class="ev"><code>server/index.ts:47</code></td></tr>
+<tr><td>The answer was sent before the guess</td><td><code>/api/stations/random</code> returned the station's coordinates, so it was visible in devtools. The server round trip on every click added latency without preventing cheating.</td><td class="ev"><code>routes.ts:59</code></td></tr>
+<tr><td>Every request loaded every station</td><td><code>getStationById</code> read the full station array with all OSM tags from Replit DB, on every guess.</td><td class="ev"><code>storage.ts:177</code></td></tr>
+<tr><td>Station list had odd entries</td><td>405 OSM points, including 8 heritage stops that NS doesn't serve (Baarland, Nisse, Beekbergen, Pluimweide…), duplicate Apeldoorn and Dieren for the steam railway, and no Buitenpost. Baarland shows up as a question in one of your console screenshots.</td><td class="ev"><code>attached_assets/export(2).geojson</code>, <code>afbeelding_1748119350220.png</code></td></tr>
+<tr><td>Result log disappeared</td><td>The CSV log was written to the local disk of an autoscaling deployment. Every redeploy or new instance started over. 14 rows survive.</td><td class="ev"><code>7b5c462</code>, <code>server/logger.ts</code></td></tr>
+<tr><td>Licence and accessibility</td><td>Map attribution was switched off; OSM and CARTO require it. <code>maximum-scale=1</code> blocked pinch zoom. <code>lang="en"</code> on a Dutch page. The Replit dev banner script shipped to production.</td><td class="ev"><code>game-map.tsx:145</code>, <code>client/index.html</code></td></tr>
+<tr><td>Nothing survived a reload</td><td>All game state lived in about 15 <code>useState</code> hooks, sequenced with <code>setTimeout</code>. A refresh lost the run, and players had no history at all.</td><td class="ev"><code>pages/game.tsx</code></td></tr>
+<tr><td>Dependency weight</td><td>65 runtime dependencies, including 27 Radix packages and 47 shadcn component files. Passport, express-session, recharts and a Drizzle Postgres schema were installed but never used.</td><td class="ev"><code>package.json</code>, <code>shared/schema.ts</code></td></tr>
+</table>
+
+<h3>What I'd keep</h3>
+<p>Your own design decisions from the history carry over: the NS sign in <code>#002d72</code> with the white square top left, dark grey railway lines at full opacity, a basemap without labels, the scale bar, distance labels on previous guesses, best of five, 5,000 points per station, reveal ends the round with 0 points and a "volgende ronde beter" message, sharing with a copied-to-clipboard toast, the score that flashes red and green (it never worked in Replit, <code>615ee0b</code> to <code>a08a128</code>, and it works in the prototype), and the credit line.</p>
+</section>
+
+<section id="storage-then">
+<h2>The storage problem, and why it doesn't come back</h2>
+<p>The storage you ran out of wasn't in the browser. It was Replit Database on the server, which caps an app at 5,000 keys. The old design wrote a key for every finished round and every session, for every player, forever. At a few hundred players a day that cap arrives within days. The fix at the time was a job that deleted old results once 4,500 keys existed.</p>
+<div class="grid2">
+  <div class="card"><h4>Before</h4><p>Every player's game state went to one shared server store. Writes grew with total players × rounds. Reads listed all keys. The limit was global, so one busy day could stop new sessions for everybody.</p></div>
+  <div class="card"><h4>After</h4><p>Each player's runs live in their own browser's IndexedDB. The server stores nothing per player. Storage grows only with how much one person plays: about 1 kB per run, so 10 runs a day for five years is roughly 18 MB. Browsers allow each site hundreds of megabytes or more. Headless Chromium on this VM reported 2,048 MB.</p></div>
+</div>
+<p>The browser does bring its own risks. Browsers may clear a site's data, Safari especially, and players switch devices. The <a href="#runs">Storing runs</a> section covers how the rebuild deals with that.</p>
+</section>
+
+<section id="arch">
+<h2>Architecture</h2>
+<div class="arch">
+  <div class="box browser">
+    <h4>Browser · installable PWA</h4>
+    <ul>
+      <li><b>game/</b> plain TypeScript: distance, scoring, seeded station picks, a reducer for the round flow. No React, fully unit tested.</li>
+      <li><b>map/</b> MapLibre GL wrapper: basemap with labels and railways stripped out, our own railway layer, guess and station markers.</li>
+      <li><b>storage/</b> IndexedDB repository through <code>idb</code>, zod schemas, migrations, export and import.</li>
+      <li><b>ui/</b> React screens: start sheet, HUD, round card, end sheet, history drawer.</li>
+      <li>Static data, built at deploy time: <code>stations.json</code> (7 kB gzipped), <code>rails.json</code> (200 kB gzipped).</li>
+    </ul>
+  </div>
+  <div>
+    <div class="box rail" style="margin-bottom:12px">
+      <h4>Railway · one service</h4>
+      <ul>
+        <li>Node + Hono, about 80 lines</li>
+        <li>Hashed assets with immutable caching and precompressed brotli</li>
+        <li>SPA fallback only for page navigations. A missing file returns 404, never <code>index.html</code>.</li>
+        <li><code>GET /healthz</code> for Railway's health check</li>
+        <li>Later, optional: <code>POST /api/results</code> to Railway Postgres</li>
+      </ul>
+    </div>
+    <div class="box ext">
+      <h4>External</h4>
+      <ul>
+        <li>OpenFreeMap vector tiles (positron style), free, no API key</li>
+        <li>Fallback if they go down: self-hosted Protomaps extract of the Netherlands in a Railway bucket</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<h3>Stack choices</h3>
+<table>
+<tr><th style="width:22%">Part</th><th style="width:30%">Choice</th><th>Why</th></tr>
+<tr><td>Language &amp; build</td><td>TypeScript strict, Vite, React</td><td>You already know the shape of this from the old version. Strict mode catches the type mix-ups that caused <code>[object Object]</code> keys.</td></tr>
+<tr><td>Game state</td><td><code>useReducer</code> with explicit phases: <code>start → guessing → roundEnd → runEnd</code></td><td>Actions that don't fit the current phase are ignored. That removes the double-click class of bugs and all the <code>setTimeout</code> sequencing. TanStack Query goes away because there is no server state.</td></tr>
+<tr><td>Map</td><td>MapLibre GL JS instead of Leaflet</td><td>You noticed performance dropping once the railway layer was added (<code>b277f5d</code>). WebGL draws 15,000 line segments without trouble, pinch zoom is smooth on phones, and line width can depend on zoom and track type. It costs about 280 kB gzipped, loaded after the first paint.</td></tr>
+<tr><td>Basemap</td><td>OpenFreeMap "positron" minus every symbol layer and its own railway layers</td><td>No place names to give the answer away, no station icons. Proper attribution stays on. CARTO's free basemap terms are for non-commercial use, and the old app hid its attribution.</td></tr>
+<tr><td>Styling</td><td>Tailwind CSS plus about 8 hand-written components</td><td>Replaces 47 generated shadcn files. Dialogs use the native <code>&lt;dialog&gt;</code> element.</td></tr>
+<tr><td>Local storage</td><td>IndexedDB through <code>idb</code> (about 1 kB), zod for validation</td><td>See <a href="#runs">Storing runs</a>. localStorage is only for small settings.</td></tr>
+<tr><td>Offline &amp; install</td><td><code>vite-plugin-pwa</code></td><td>The app starts without a network after the first visit. Installed to the home screen, Safari also stops clearing its storage after 7 days.</td></tr>
+<tr><td>Server</td><td>Hono on Node</td><td>Tiny, typed, and ready for API routes if the optional stats phase happens.</td></tr>
+<tr><td>Tests &amp; tooling</td><td>Vitest, <code>fake-indexeddb</code>, Playwright, Biome</td><td>Unit tests for rules and storage, end-to-end runs at desktop and phone sizes. The prototype on this page was verified by exactly that kind of script.</td></tr>
+</table>
+</section>
+
+<section id="data">
+<h2>Data</h2>
+<h3>Stations</h3>
+<p>I'd switch the station source from the Overpass export to the <a href="https://www.rijdendetreinen.nl/en/open-data/stations">Rijden de Treinen station list</a> (CC0, latest file September 2023). It uses the official NS station codes and a station type, from <code>megastation</code> down to <code>stoptreinstation</code>. That type gives us difficulty levels for free.</p>
+<div class="grid3">
+  <div class="tile"><div class="k">Playable stations</div><div class="v">395</div><div class="s">397 in the file, minus 2 occasional stops: Heerenveen IJsstadion and Rotterdam Stadion</div></div>
+  <div class="tile"><div class="k">Intercity-level</div><div class="v">70</div><div class="s">mega, IC and sneltrein stations; the "Alleen intercity" option</div></div>
+  <div class="tile"><div class="k">Matched to OSM by code</div><div class="v">397</div><div class="s">coordinates within 300 m, except Rijswijk at 311 m</div></div>
+</div>
+<p>Stations may have opened or been renamed since September 2023, so the build script also reads an <code>overrides.json</code> for additions, renames and exclusions. Checking that list against the current NS map is part of phase 0. The build step turns the CSV into a 29 kB JSON file (7 kB gzipped). No database.</p>
+
+<h3>Railway lines</h3>
+<p>The two files you added to the root are the same 16,033 OSM ways. <code>spoorlijnen.geojson</code> is the tagged version of the old <code>spoorlijnen2.geojson</code>, with simplified geometry (36k points). <code>export(3).geojson</code> is the raw Overpass export at full resolution (169k points). The tags let us style and filter the lines:</p>
+<ul>
+  <li>Drop crossovers, industrial, military and test track: 979 segments that only add clutter.</li>
+  <li>Draw main lines thicker than branch lines. Show heritage lines (Hoorn–Medemblik, Apeldoorn–Dieren, STAR) as thin dashed lines, because they are real landmarks but no NS station sits on them.</li>
+  <li>Round coordinates to 5 decimals (about 1 m) and keep a single-letter usage property.</li>
+</ul>
+<p>Result: 2.0 MB raw, 200 kB gzipped, down from 2.8 MB with no compression configured. <code>docs/plan/prep-data.py</code> already does this; it becomes <code>scripts/build-data.ts</code>. I'd keep only <code>spoorlijnen.geojson</code> in git, gzipped (1 MB), and document the Overpass query instead of committing the 26 MB raw export.</p>
+</section>
+
+<section id="rules">
+<h2>Rules and scoring</h2>
+<p>The core loop stays: a station name, you click the map, you see how far off you were, you try again until you're within 500 m or give up. Five stations per run.</p>
+<h3>Proposed round score</h3>
+<ul>
+  <li>Every round starts at 5,000.</li>
+  <li>Every miss costs <b>250 + 7.5 points per km</b> off, capped at 1,000 per miss. A 100 km miss costs 1,000, a 10 km miss 325, a 2 km miss 265.</li>
+  <li>A hit within 500 m ends the round and keeps what's left. First-try hits score 5,000.</li>
+  <li>Giving up scores 0. If the score reaches 0 the round ends by itself and shows the station, so nobody gets stuck on a 15-attempt round like Ravenstein in the old log.</li>
+</ul>
+<p>The score only ever goes down within a round, and every guess counts, which is what you described in <code>a1969d1</code> and <code>b371a60</code>. The numbers are easy to tune: they are two constants in one tested function.</p>
+
+<div class="viz" style="position:relative">
+  <p class="viz-title">Round score after each guess</p>
+  <p class="viz-sub">Example round: misses at 69 km, 9.5 km and 2 km, then a hit at 300 m. Edit the distances below.</p>
+  <div class="legend"><span><i style="background:var(--series-2)"></i>Old client formula</span><span><i style="background:var(--series-1)"></i>Proposed</span></div>
+  <svg id="chart" viewBox="0 0 900 260" width="100%" role="img" aria-label="Line chart comparing old and proposed round scores per guess"></svg>
+  <div class="viz-tip" id="tip"></div>
+  <div class="calc"><label>Distances in km, last one is the hit: <input type="text" id="dists" value="69, 9.5, 2, 0.3"></label></div>
+  <table id="chartTable" style="margin-top:10px"></table>
+</div>
+
+<h3>Modes</h3>
+<div class="grid3">
+  <div class="card"><h4>Vrij spelen</h4><p>Five random stations, never the same one twice in a run. Choose all 395 or intercity only.</p></div>
+  <div class="card"><h4>Dagelijkse rit</h4><p>The same five stations for everyone on a given day, derived from the Amsterdam date. No server needed. One attempt a day, a streak, and a Wordle-style share.</p></div>
+  <div class="card"><h4>Later</h4><p>Region packs (Randstad, Limburg), heritage railways, or "Alle stations" as a long-run collection mode.</p></div>
+</div>
+</section>
+
+<section id="runs">
+<h2>Storing runs locally</h2>
+<p>This is the main upgrade you asked for. The rules I'd hold the design to:</p>
+<ol>
+  <li><b>One record per run.</b> Not per guess or per round. A finished run is about 1 kB. No counters, no key scanning.</li>
+  <li><b>Write after every guess.</b> The whole run record is rewritten, which is cheap at 1 kB. A reload, crash or closed tab resumes where you were.</li>
+  <li><b>Derive, don't store, statistics.</b> Totals, bests, averages and streaks are computed from the runs. Reading 5,000 runs takes tens of milliseconds, and cached aggregates can come later if that ever becomes slow.</li>
+  <li><b>Storage failures never stop the game.</b> Every write is caught. If IndexedDB is unavailable or full, the run continues in memory with a clear notice and an export button.</li>
+  <li><b>The player owns the data.</b> Export to a JSON file, import on another device. Import is idempotent: the same run ID overwrites, so importing twice is harmless.</li>
+</ol>
+
+<h3>Schema</h3>
+<pre><code>// IndexedDB "ovguesser", version 1
+// store "runs": keyPath "id", indexes: startedAt, status, [mode, dateKey]
+// store "meta": key/value for schema version, settings, lastExportAt
+
+type Guess = [lat: number, lng: number, distanceM: number, msIntoRound: number];
+
+interface Round {
+  code: string;            // NS station code, e.g. "UT"
+  name: string;            // name at the time, so history survives data updates
+  startedAt: number | null;
+  guesses: Guess[];
+  outcome: "found" | "revealed" | null;
+}
+
+interface Run {
+  id: string;              // crypto.randomUUID()
+  v: 1;                    // record schema version, migrated on read
+  dataVersion: string;     // which stations.json the run was played with
+  mode: "classic" | "daily";
+  pool: "all" | "major";
+  seed: number;            // replays the same five stations
+  dateKey: string;         // "2026-09-26", Europe/Amsterdam
+  status: "active" | "finished" | "abandoned";
+  current: number;         // round index
+  rounds: Round[];         // always 5
+  startedAt: number;
+  finishedAt: number | null;
+  total?: number;          // cached on finish; recomputable from rounds
+}</code></pre>
+<p>Guesses are stored as small arrays, not objects, to keep records compact. Scores are never stored per round. They're recomputed with the scoring function, so a formula change can't produce two versions of the truth again. The one exception is the cached <code>total</code> for fast lists.</p>
+
+<h3>How much space</h3>
+<div class="viz">
+  <p class="viz-title">Storage used after five years of play</p>
+  <div class="calc"><label>Runs per day: <input type="range" id="rpd" min="1" max="50" value="10"></label> <b id="rpdv">10</b></div>
+  <div class="grid3" style="margin-top:10px">
+    <div class="tile"><div class="k">Runs</div><div class="v" id="sRuns"></div></div>
+    <div class="tile"><div class="k">Space used</div><div class="v" id="sMb"></div></div>
+    <div class="tile"><div class="k">Share of a 1 GB allowance</div><div class="v" id="sPct"></div></div>
+  </div>
+  <p class="muted" style="margin:10px 0 4px">At 1.0 kB per run, as measured in the prototype. Browsers typically give a site far more than 1 GB on a normal disk.</p>
+</div>
+
+<h3>When the browser deletes data anyway</h3>
+<table>
+<tr><th style="width:30%">Risk</th><th>Mitigation</th></tr>
+<tr><td>Safari clears storage for sites not visited in 7 days</td><td>Home-screen web apps are exempt, so show an "add to home screen" tip on iOS after the second finished run. Offer export in the history drawer, and remind once if the last export is old and there are more than 20 runs.</td></tr>
+<tr><td>Browser evicts data when the disk is nearly full</td><td>Call <code>navigator.storage.persist()</code> after the first finished run. The history drawer shows whether storage is persistent.</td></tr>
+<tr><td>Private windows, blocked storage</td><td>Detect on start. Play continues in memory, with a banner saying runs won't be kept.</td></tr>
+<tr><td>Quota exceeded</td><td>Catch <code>QuotaExceededError</code>, keep playing, show a toast with an export button. At 1 kB a run this is unlikely.</td></tr>
+<tr><td>Corrupt or old records</td><td>zod validation on read. Invalid records are skipped and counted, never crash the list. Migrations run per record from <code>v</code>.</td></tr>
+<tr><td>Two tabs</td><td>Each tab plays its own run. A <code>BroadcastChannel</code> refreshes the history list in other tabs. Starting a new run marks the old active run as abandoned.</td></tr>
+<tr><td>New phone</td><td>Export and import in v1. A "sync code" backup to a server is possible later, if you add the optional database.</td></tr>
+</table>
+</section>
+
+<section id="demo">
+<h2>Prototype</h2>
+<p>A single-file prototype of the proposed game with real data, a real MapLibre map and real IndexedDB storage. Play a run, reload in the middle, open "Mijn ritten", export. It's there to judge feel and flow. The production code will be structured as described above.</p>
+<div class="demo-bar">
+  <button id="viewDesktop" aria-pressed="true">Desktop</button>
+  <button id="viewPhone" aria-pressed="false">Phone</button>
+  <button id="reloadDemo">Reload (tests resume)</button>
+  <a href="demo.html" target="_blank" style="font-size:14px;margin-left:auto">Open full screen ↗</a>
+</div>
+<div class="demo-frame" id="demoFrame"><iframe id="demo" src="demo.html" title="OVGuesser prototype"></iframe></div>
+<p class="muted">Things to try: turn on "Direct gokken" to compare the two input styles · give up a round · play the daily ride twice and see it marked as played · press Enter to confirm and continue.</p>
+
+<h3>Screenshots from the automated test run</h3>
+<p class="muted">A Playwright script played full runs at 1280×800 and 390×844, gave up one round per run, reloaded mid-run to check resume, and read the share text back from IndexedDB. No page errors.</p>
+<div class="shots">
+  <figure><img src="shots/desktop-guessing.png" alt="Desktop: two misses with distance labels, warmer hint, round score flashing" loading="lazy"><figcaption>Two misses. The round score flashes and shows the deduction; the hint says whether you got warmer.</figcaption></figure>
+  <figure><img src="shots/mobile-round0.png" alt="Phone: round found card at the bottom" loading="lazy"><figcaption>Phone: round result as a bottom sheet.</figcaption></figure>
+</div>
+<div class="shots">
+  <figure><img src="shots/desktop-end.png" alt="Desktop: end of run summary" loading="lazy"><figcaption>End of run: per-station scores, share, play again.</figcaption></figure>
+  <figure><img src="shots/mobile-history.png" alt="Phone: history drawer with tiles and a run" loading="lazy"><figcaption>"Mijn ritten": stats derived from stored runs, export and import.</figcaption></figure>
+</div>
+</section>
+
+<section id="ux">
+<h2>UX and polish</h2>
+<div class="grid2">
+  <div>
+    <h3>Playing</h3>
+    <ul>
+      <li>Tap drops a pin, then "Gok hier" or Enter confirms. On phones this stops a pan from turning into a guess. Desktop players can turn on direct guessing.</li>
+      <li>"Warmer" or "kouder" after each miss, and chips with all distances so far.</li>
+      <li>At the zoom level that shows the whole country, one pixel is about 600 m, so the 500 m radius needs zooming in. After a miss under 5 km, a hint says so. The test script ran into this itself.</li>
+      <li>End of round: the camera fits your guesses and the station, with a dashed line from your last guess and a mini station sign.</li>
+      <li>Rounds and runs resume after a reload.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Feel</h3>
+    <ul>
+      <li>Score changes flash and show the deduction ("−322").</li>
+      <li>Bottom sheets on phones, cards on desktop, safe-area padding for notched phones, attribution collapsed to an ⓘ button.</li>
+      <li>Loading never blocks on the railway layer. If it fails, you can still play and a toast says so.</li>
+      <li>Share: squares per station plus attempts. Web Share on phones, clipboard and toast on desktop.</li>
+      <li>Self-hosted font, no Google Fonts or unpkg at runtime.</li>
+    </ul>
+  </div>
+</div>
+<h3>Accessibility and language</h3>
+<ul>
+  <li>Keyboard: Enter confirms and continues, Escape removes the pin or closes the drawer, focus moves to the primary button when a round ends.</li>
+  <li>Results are announced through an <code>aria-live</code> region. Colour never carries meaning alone. Pinch zoom stays enabled. <code>prefers-reduced-motion</code> turns off animations.</li>
+  <li><code>lang="nl"</code>, all copy in one strings file so an English version is a translation job, not a refactor.</li>
+</ul>
+</section>
+
+<section id="reliability">
+<h2>Reliability</h2>
+<table>
+<tr><th style="width:26%">Layer</th><th>What gets tested or guarded</th></tr>
+<tr><td>Game rules</td><td>Vitest: scoring edge cases (first-try hit, auto-reveal at 0, cap per miss), haversine against known distances, seeded picks never repeat within a run, daily seed is stable per date.</td></tr>
+<tr><td>Round flow</td><td>Reducer tests: every action in every phase. Invalid actions are no-ops, which covers double clicks and late network callbacks.</td></tr>
+<tr><td>Storage</td><td><code>fake-indexeddb</code>: write and resume, migration from v0 fixtures, corrupt records skipped, quota errors simulated, export then import is a round trip.</td></tr>
+<tr><td>End to end</td><td>Playwright at desktop and phone sizes: full run, give up, reload mid-run, share text, history. Runs in CI on every push, against the production build.</td></tr>
+<tr><td>Data build</td><td>Fails the build if a station lacks coordinates, falls outside the Netherlands' bounding box, or has a duplicate name or code.</td></tr>
+<tr><td>Runtime</td><td>React error boundary with a "restart run" button that keeps the stored run. Global error handler logs to the console. Sentry or similar can be added later if you want reports.</td></tr>
+<tr><td>Budgets</td><td>Initial JavaScript under 350 kB gzipped including MapLibre. Game playable within 3 s on a mid-range phone on 4G. Checked with Lighthouse in CI.</td></tr>
+</table>
+</section>
+
+<section id="railway">
+<h2>Hosting on Railway</h2>
+<ul>
+  <li>One service, deployed from the GitHub repo's <code>main</code> branch with "Wait for CI" on, so a failing test blocks the deploy.</li>
+  <li>A multi-stage <code>Dockerfile</code>: install, run the data build, Vite build, then copy <code>dist/</code> and the server into a slim Node image.</li>
+  <li><code>railway.json</code> sets the health check path to <code>/healthz</code> and restart on failure. The server listens on <code>$PORT</code> instead of a hard-coded 5000.</li>
+  <li>No volume and no database in v1. It's a stateless service, so any replica serves any request, which is the property the old version lacked.</li>
+  <li>Pull request environments give a preview URL per branch.</li>
+  <li>Domains: attach <code>ovguesser.com</code> (seen in your error log) and <code>ovguesser.nl</code> (in the share text). Switch DNS only after the Railway deployment passes on its generated domain, and keep the Replit deployment running until then.</li>
+</ul>
+<pre><code>// railway.json
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": { "builder": "DOCKERFILE" },
+  "deploy": {
+    "healthcheckPath": "/healthz",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 5
+  }
+}</code></pre>
+<h3>Optional later: anonymous global stats</h3>
+<p>If you want what the CSV log was trying to give you, add a Railway Postgres database and one endpoint that takes a finished run's summary: station codes, attempts, distances and score, no IP address. One row per round in one table. That gives you lines like "x% of players found Spaubeek on the first try", a hardest-stations list and a daily leaderboard. Postgres has no key cap, and a million rounds is roughly 100 MB. The game never waits on this endpoint; if it fails, the run is still saved locally. I'd only build it after v1 is live.</p>
+</section>
+
+<section id="phases">
+<h2>Phases</h2>
+<div class="phase"><div class="n">0</div><div><h4>Foundation</h4>
+  <ul><li>Repo skeleton at the root next to <code>old_version/</code>: Vite, TypeScript, Biome, Vitest, Playwright, GitHub Actions.</li>
+  <li><code>scripts/build-data.ts</code> with <code>overrides.json</code>. Move the raw GeoJSON to <code>data/raw/</code>.</li></ul>
+  <p class="done-when">Done when CI is green on an empty app and the data build produces both files.</p></div></div>
+<div class="phase"><div class="n">1</div><div><h4>Core game</h4>
+  <ul><li>Game logic and reducer with tests. Map with basemap and rails. HUD, pin and confirm, round card, end sheet, share.</li></ul>
+  <p class="done-when">Done when the e2e test plays a full run at both sizes.</p></div></div>
+<div class="phase"><div class="n">2</div><div><h4>Local runs</h4>
+  <ul><li>IndexedDB repository, resume, history drawer with stats, export and import, persistence request, failure modes.</li></ul>
+  <p class="done-when">Done when storage tests cover the table above and a reload mid-round resumes in e2e.</p></div></div>
+<div class="phase"><div class="n">3</div><div><h4>Polish</h4>
+  <ul><li>Daily ride and streak, intercity pool, PWA and offline, accessibility pass, copy review with you, performance budgets.</li></ul>
+  <p class="done-when">Done when you've played it on your own phone and signed off on the feel.</p></div></div>
+<div class="phase"><div class="n">4</div><div><h4>Railway</h4>
+  <ul><li>Dockerfile, <code>railway.json</code>, health check, PR environments, domain cutover.</li></ul>
+  <p class="done-when">Done when ovguesser.com serves the new build and the old deployment is off.</p></div></div>
+<div class="phase"><div class="n">5</div><div><h4>Optional: global stats</h4>
+  <ul><li>Postgres, the results endpoint, hardest stations, daily leaderboard.</li></ul></div></div>
+
+<h3>Repo layout</h3>
+<pre><code>/
+├─ old_version/                 untouched reference
+├─ data/raw/                    spoorlijnen.geojson.gz, stations-2023-09-nl.csv
+├─ data/overrides.json          added, renamed or excluded stations
+├─ scripts/build-data.ts
+├─ src/
+│  ├─ game/                     distance, scoring, rng, reducer (+ tests)
+│  ├─ storage/                  db, runs repository, schema, migrations, export
+│  ├─ map/                      GameMap, basemap filter, layers, markers
+│  ├─ ui/                       Hud, RoundCard, StartSheet, EndSheet, HistoryDrawer, Toast
+│  └─ i18n/nl.ts
+├─ server/index.ts              Hono: static files, /healthz
+├─ e2e/                         Playwright specs
+├─ docs/plan/                   this page and the prototype
+├─ Dockerfile, railway.json, .github/workflows/ci.yml</code></pre>
+</section>
+
+<section id="questions">
+<h2>Decisions for you</h2>
+<div class="q"><b>1. Scoring</b><p>Is 250 + 7.5 per km per miss the right feel, and does the 500 m radius stay? Try a few rounds in the prototype first; the constants are easy to change.</p></div>
+<div class="q"><b>2. Guess input</b><p>Pin and confirm by default everywhere, or direct click on desktop and pin and confirm only on touch screens? I lean towards the second.</p></div>
+<div class="q"><b>3. Server database</b><p>v1 has none. Do you want the optional global stats and daily leaderboard in phase 5, or keep OVGuesser fully local?</p></div>
+<div class="q"><b>4. Domains</b><p>Is ovguesser.com or ovguesser.nl the main domain, where is DNS managed, and is the Replit deployment still live?</p></div>
+<div class="q"><b>5. Language</b><p>Dutch only, or Dutch with an English toggle from the start?</p></div>
+<div class="q"><b>6. Station pool</b><p>Only the 395 NS stations, or also heritage stops and border stations like Emmerich or Antwerpen as a bonus mode?</p></div>
+<div class="q"><b>7. Credit line</b><p>The old footer said "Gemaakt door Anne v/d Veen met Replit en Sonnet 4". What should it say now?</p></div>
+</section>
+</div>
+
+<script>
+// ---- scoring chart ----
+const missOld = (attempt, d) => Math.max(0, 5000 - (attempt - 1) * 500 - Math.floor(d / 100)); // old client, latest guess only
+const missNew = m => 250 + Math.min(750, Math.round(7.5 * m / 1000));
+function series(km) {
+  const ms = km.map(k => k * 1000);
+  const old = ms.map((d, i) => missOld(i + 1, d));
+  let s = 5000; const neu = ms.map((d, i) => { if (d > 500) s -= missNew(d); return Math.max(0, s); });
+  return { ms, old, neu };
+}
+const fmt = n => n.toLocaleString("nl-NL");
+const fmtD = m => m >= 1000 ? `${(m / 1000).toLocaleString("nl-NL", { maximumFractionDigits: 1 })} km` : `${m} m`;
+function drawChart() {
+  const km = document.getElementById("dists").value.split(/[,;\s]+/).map(Number).filter(x => x >= 0 && isFinite(x)).slice(0, 12);
+  if (km.length < 1) return;
+  const { ms, old, neu } = series(km);
+  const W = 900, H = 260, L = 52, R = 100, T = 12, B = 34;
+  const n = km.length, x = i => L + (n === 1 ? (W - L - R) / 2 : i * (W - L - R) / (n - 1)), y = v => T + (1 - v / 5000) * (H - T - B);
+  let g = '<g class="grid">';
+  for (const v of [0, 1000, 2000, 3000, 4000, 5000]) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`;
+  g += "</g>";
+  km.forEach((_, i) => g += `<text x="${x(i)}" y="${H - 12}" text-anchor="middle">${i === n - 1 ? "hit" : "guess " + (i + 1)}</text>`);
+  const path = (arr, c) => `<path d="${arr.map((v, i) => (i ? "L" : "M") + x(i) + " " + y(v)).join(" ")}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`
+    + arr.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="4.5" fill="${c}" stroke="#fff" stroke-width="2"/>`).join("");
+  const c1 = getComputedStyle(document.documentElement).getPropertyValue("--series-1").trim(), c2 = getComputedStyle(document.documentElement).getPropertyValue("--series-2").trim();
+  // direct labels at the line ends, nudged apart if they collide
+  let yo = y(old[n - 1]) + 4, yn = y(neu[n - 1]) + 4; if (Math.abs(yo - yn) < 14) { if (yo < yn) { yo -= 7; yn += 7; } else { yo += 7; yn -= 7; } }
+  const labels = `<text x="${W - R + 10}" y="${yo}">Old ${fmt(old[n - 1])}</text><text x="${W - R + 10}" y="${yn}">New ${fmt(neu[n - 1])}</text>`;
+  const hits = km.map((_, i) => `<rect x="${x(i) - 26}" y="${T}" width="52" height="${H - T - B}" fill="transparent" data-i="${i}"/>`).join("");
+  const svg = document.getElementById("chart");
+  svg.innerHTML = g + path(old, c2) + path(neu, c1) + labels + hits;
+  const tip = document.getElementById("tip");
+  svg.querySelectorAll("rect[data-i]").forEach(r => {
+    r.addEventListener("mouseenter", () => {
+      const i = +r.dataset.i, box = svg.getBoundingClientRect(), sc = box.width / W;
+      tip.innerHTML = `${i === n - 1 ? "Hit" : "Guess " + (i + 1)} · ${fmtD(ms[i])}<br>Old: ${fmt(old[i])} · New: ${fmt(neu[i])}`;
+      tip.style.left = (svg.offsetLeft + x(i) * sc) + "px"; tip.style.top = (svg.offsetTop + Math.min(y(old[i]), y(neu[i])) * sc) + "px"; tip.style.display = "block";
+    });
+    r.addEventListener("mouseleave", () => tip.style.display = "none");
+  });
+  document.getElementById("chartTable").innerHTML = `<tr><th>Guess</th><th>Distance</th><th style="text-align:right">Old</th><th style="text-align:right">New</th></tr>` +
+    km.map((_, i) => `<tr><td>${i === n - 1 ? "hit" : i + 1}</td><td>${fmtD(ms[i])}</td><td class="num">${fmt(old[i])}${i && old[i] > old[i - 1] ? ' <span class="tag amber">went up</span>' : ""}</td><td class="num">${fmt(neu[i])}</td></tr>`).join("");
+}
+document.getElementById("dists").addEventListener("input", drawChart);
+drawChart();
+
+// ---- storage calculator ----
+function drawStorage() {
+  const rpd = +document.getElementById("rpd").value, runs = rpd * 365 * 5, mb = runs * 1.0 / 1024;
+  document.getElementById("rpdv").textContent = rpd;
+  document.getElementById("sRuns").textContent = fmt(runs);
+  document.getElementById("sMb").textContent = `${mb.toLocaleString("nl-NL", { maximumFractionDigits: 1 })} MB`;
+  document.getElementById("sPct").textContent = `${(mb / 1024 * 100).toLocaleString("nl-NL", { maximumFractionDigits: 1 })}%`;
+}
+document.getElementById("rpd").addEventListener("input", drawStorage);
+drawStorage();
+
+// ---- demo frame ----
+const frame = document.getElementById("demoFrame");
+function setView(phone) {
+  frame.classList.toggle("phone", phone);
+  document.getElementById("viewPhone").setAttribute("aria-pressed", phone);
+  document.getElementById("viewDesktop").setAttribute("aria-pressed", !phone);
+}
+document.getElementById("viewDesktop").onclick = () => setView(false);
+document.getElementById("viewPhone").onclick = () => setView(true);
+document.getElementById("reloadDemo").onclick = () => document.getElementById("demo").contentWindow.location.reload();
+</script>
+</body>
+</html>

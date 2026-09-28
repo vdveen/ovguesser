@@ -1,0 +1,6 @@
+{
+  "$comment": "Manual corrections applied on top of data/raw/stations-2023-09-nl.csv. exclude: station codes to drop. rename: code -> new name. add: extra stations as {code, name, tier, lat, lng}.",
+  "exclude": [],
+  "rename": {},
+  "add": []
+}

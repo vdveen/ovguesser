@@ -1,0 +1,12 @@
+node_modules
+dist
+.DS_Store
+*.local
+.env
+data/raw/*.geojson
+test-results
+playwright-report
+old_version/node_modules
+src/data/stations.json
+src/data/rails.json
+src/data/meta.json

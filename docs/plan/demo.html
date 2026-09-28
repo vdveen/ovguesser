@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OVGuesser prototype</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<style>
+  :root {
+    --ns-blue: #002d72;
+    --ns-yellow: #ffc917;
+    --ink: #0f172a;
+    --ink-2: #475569;
+    --ink-3: #94a3b8;
+    --line: #e2e8f0;
+    --card: rgba(255,255,255,.97);
+    --good: #0f8a5f;
+    --bad: #c2410c;
+    --radius: 14px;
+    --shadow: 0 8px 30px rgba(15,23,42,.14), 0 1px 3px rgba(15,23,42,.08);
+    font-family: "Segoe UI", "Frutiger", system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #e8ecef; }
+  #map { position: absolute; inset: 0; }
+  button { font: inherit; cursor: pointer; }
+  button:disabled { cursor: default; opacity: .55; }
+  .btn { border: 0; border-radius: 10px; padding: 11px 16px; font-weight: 600; font-size: 15px; transition: transform .08s, background .15s; }
+  .btn:active:not(:disabled) { transform: scale(.97); }
+  .btn-primary { background: var(--ns-blue); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: #013a8f; }
+  .btn-yellow { background: var(--ns-yellow); color: var(--ns-blue); }
+  .btn-ghost { background: #f1f5f9; color: var(--ink); }
+  .btn-ghost:hover:not(:disabled) { background: #e2e8f0; }
+  .btn-link { background: none; border: 0; color: var(--ink-2); text-decoration: underline; padding: 4px; font-size: 13px; }
+  kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; color: var(--ink-2); background: #fff; }
+
+  /* HUD */
+  #hud { position: absolute; top: 16px; left: 16px; width: 360px; z-index: 5; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px 12px; display: none; }
+  .hud-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 17px; letter-spacing: -.01em; background: none; border: 0; padding: 0; color: var(--ink); }
+  .brand-mark { width: 26px; height: 26px; border-radius: 7px; background: var(--ns-yellow); display: grid; place-items: center; color: var(--ns-blue); font-size: 15px; }
+  .progress { display: flex; gap: 4px; align-items: center; }
+  .progress i { width: 18px; height: 6px; border-radius: 3px; background: var(--line); }
+  .progress i.done { background: var(--ns-blue); }
+  .progress i.now { background: var(--ns-yellow); }
+  .ns-sign { position: relative; background: var(--ns-blue); color: #fff; padding: 12px 14px 12px 34px; font-size: 22px; font-weight: 600; letter-spacing: .01em; line-height: 1.15; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+  .ns-sign::before { content: ""; position: absolute; top: 0; left: 0; width: 18px; height: 18px; background: #f3f4f6; }
+  .ns-sign small { display: block; font-size: 12px; font-weight: 400; opacity: .7; margin-bottom: 2px; letter-spacing: .02em; }
+  .scores { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 8px; }
+  .score { border-radius: 10px; background: #f8fafc; padding: 7px 10px; }
+  .score span { display: block; font-size: 11px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .05em; }
+  .score b { font-size: 20px; font-variant-numeric: tabular-nums; }
+  .flash-down { animation: flashDown .7s ease-out; }
+  .flash-up { animation: flashUp .9s ease-out; }
+  @keyframes flashDown { 0% { background: #fed7aa; } 100% { background: #f8fafc; } }
+  @keyframes flashUp { 0% { background: #bbf7d0; } 100% { background: #f8fafc; } }
+  .delta { font-size: 12px; font-weight: 600; margin-left: 6px; color: var(--bad); }
+  .hint { font-size: 14px; color: var(--ink-2); min-height: 20px; display: flex; align-items: center; gap: 6px; }
+  .hint strong { color: var(--ink); }
+  .guesses { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .chip { font-size: 12px; padding: 3px 8px; border-radius: 999px; background: #f1f5f9; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .chip.warmer { background: #fff7ed; color: #9a3412; }
+  .hud-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .hud-actions .btn { flex: 1; padding: 9px 12px; font-size: 14px; }
+
+  /* Confirm bar */
+  #confirm { position: absolute; left: 50%; bottom: 28px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 6; transition: .18s; display: flex; gap: 8px; align-items: center; background: var(--card); padding: 8px; border-radius: 16px; box-shadow: var(--shadow); }
+  #confirm.show { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+  #confirm .btn-primary { padding: 13px 28px; font-size: 16px; }
+
+  /* Markers */
+  .pin { position: relative; width: 18px; height: 18px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
+  .pin.pending { background: var(--ns-blue); animation: pulse 1.4s infinite; }
+  .pin.guess { background: #f59e0b; width: 14px; height: 14px; border-width: 2px; }
+  .pin.guess.latest { background: #ea580c; width: 18px; height: 18px; border-width: 3px; }
+  .pin-label { position: absolute; top: calc(100% + 3px); left: 50%; transform: translateX(-50%); background: rgba(15,23,42,.85); color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 5px; white-space: nowrap; font-variant-numeric: tabular-nums; pointer-events: none; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(0,45,114,.45), 0 2px 6px rgba(0,0,0,.35); } 50% { box-shadow: 0 0 0 10px rgba(0,45,114,0), 0 2px 6px rgba(0,0,0,.35); } }
+  .station-pin { display: flex; flex-direction: column; align-items: center; }
+  .station-pin .mini-sign { position: relative; background: var(--ns-blue); color: #fff; font-size: 13px; font-weight: 600; padding: 4px 8px 4px 16px; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+  .station-pin .mini-sign::before { content: ""; position: absolute; left: 0; top: 0; width: 9px; height: 9px; background: #f3f4f6; }
+  .station-pin .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--ns-yellow); border: 3px solid var(--ns-blue); margin-top: 4px; }
+
+  /* Sheets / modals */
+  .overlay { position: absolute; inset: 0; z-index: 10; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(15,23,42,.28); backdrop-filter: blur(2px); }
+  .overlay.show { display: flex; }
+  .sheet { background: #fff; border-radius: 18px; box-shadow: var(--shadow); width: 100%; max-width: 420px; padding: 22px; max-height: calc(100% - 20px); overflow: auto; animation: rise .22s ease-out; }
+  @keyframes rise { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .sheet h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: -.01em; }
+  .sheet p.sub { margin: 0 0 16px; color: var(--ink-2); font-size: 14px; }
+  .stack { display: flex; flex-direction: column; gap: 8px; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  .seg { display: flex; background: #f1f5f9; border-radius: 10px; padding: 3px; gap: 3px; }
+  .seg button { flex: 1; border: 0; background: none; padding: 7px 8px; border-radius: 8px; font-size: 13px; color: var(--ink-2); }
+  .seg button[aria-pressed="true"] { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .label { font-size: 12px; color: var(--ink-2); margin: 12px 0 5px; text-transform: uppercase; letter-spacing: .05em; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; margin-top: 12px; }
+  .toggle input { width: 18px; height: 18px; accent-color: var(--ns-blue); }
+  .resume { border: 1px dashed #93c5fd; background: #eff6ff; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .big-score { font-size: 40px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .badge { display: inline-block; background: var(--ns-yellow); color: var(--ns-blue); font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; vertical-align: middle; margin-left: 6px; }
+  table.rounds { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0 16px; }
+  table.rounds td { padding: 7px 4px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  table.rounds td:last-child { text-align: right; font-weight: 600; }
+  table.rounds td.muted { color: var(--ink-2); font-size: 13px; }
+
+  /* Round result card */
+  #roundCard { position: absolute; left: 0; right: 0; margin: 0 auto; bottom: 24px; z-index: 7; width: min(420px, calc(100% - 32px)); background: #fff; border-radius: 18px; box-shadow: var(--shadow); padding: 16px 18px; display: none; animation: rise .22s ease-out; }
+  #roundCard.show { display: block; }
+  #roundCard .title { font-size: 18px; font-weight: 700; }
+  #roundCard .meta { color: var(--ink-2); font-size: 14px; margin: 2px 0 12px; }
+  #roundCard .pts { float: right; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* History drawer */
+  #drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 100%); z-index: 12; background: #fff; box-shadow: -8px 0 30px rgba(15,23,42,.15); display: none; flex-direction: column; }
+  #drawer.show { display: flex; animation: slideIn .22s ease-out; }
+  @keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  #drawer header { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 8px; }
+  #drawer header h2 { margin: 0; font-size: 20px; }
+  #drawer .body { overflow: auto; padding: 0 18px 18px; flex: 1; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 14px; }
+  .tile { background: #f8fafc; border-radius: 12px; padding: 10px 12px; }
+  .tile span { font-size: 12px; color: var(--ink-2); display: block; }
+  .tile b { font-size: 22px; font-variant-numeric: tabular-nums; }
+  .run { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; }
+  .run summary { list-style: none; cursor: pointer; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; }
+  .run summary::-webkit-details-marker { display: none; }
+  .run summary .when { color: var(--ink-2); font-size: 12px; }
+  .run summary b { font-variant-numeric: tabular-nums; }
+  .run .detail { padding: 0 12px 10px; font-size: 13px; color: var(--ink-2); }
+  .run .detail div { display: flex; justify-content: space-between; padding: 3px 0; }
+  .mode-tag { font-size: 11px; padding: 1px 6px; border-radius: 5px; background: #eef2ff; color: #3730a3; margin-right: 4px; }
+  .storage-note { font-size: 12px; color: var(--ink-2); margin-top: 12px; line-height: 1.5; }
+
+  #toast { position: absolute; left: 50%; top: 18px; transform: translate(-50%, -80px); z-index: 20; background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px; transition: transform .2s; }
+  #toast.show { transform: translate(-50%, 0); }
+  #loading { position: absolute; inset: 0; display: grid; place-items: center; z-index: 30; background: #e8ecef; font-size: 15px; color: var(--ink-2); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  @media (max-width: 640px) {
+    #hud { left: 8px; right: 8px; top: 8px; width: auto; padding: 10px 12px; }
+    .ns-sign { font-size: 19px; padding: 9px 12px 9px 30px; }
+    .scores { margin: 8px 0 4px; }
+    .score b { font-size: 17px; }
+    .guesses { display: none; }
+    .scores { gap: 6px; margin: 6px 0 4px; }
+    .score { padding: 4px 8px; display: flex; align-items: baseline; gap: 6px; }
+    .score span { display: inline; font-size: 10px; }
+    .hint { font-size: 13px; }
+    .hud-actions { margin-top: 6px; }
+    .hud-actions .btn { padding: 6px 10px; font-size: 13px; }
+    #historyBtn2 { display: none; }
+    .hud-top { margin-bottom: 8px; }
+    .overlay { align-items: flex-end; padding: 0; }
+    .sheet { border-radius: 18px 18px 0 0; max-width: none; padding-bottom: calc(22px + env(safe-area-inset-bottom)); }
+    #roundCard { bottom: 0; width: 100%; border-radius: 18px 18px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+    #confirm { bottom: calc(18px + env(safe-area-inset-bottom)); }
+    .kbd-hint { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="map" role="application" aria-label="Kaart van Nederland. Klik om te gokken."></div>
+<div id="loading">Kaart laden…</div>
+
+<section id="hud" aria-label="Spelstatus">
+  <div class="hud-top">
+    <button class="brand" id="homeBtn" title="Menu"><span class="brand-mark">▶</span>OVGuesser</button>
+    <div class="progress" id="progress" aria-label="Voortgang"></div>
+  </div>
+  <div class="ns-sign"><small>Waar ligt station…</small><span id="stationName">–</span></div>
+  <div class="scores">
+    <div class="score" id="roundScoreBox"><span>Rondescore</span><b id="roundScore">5.000</b><span class="delta" id="delta" style="display:inline"></span></div>
+    <div class="score"><span>Totaal</span><b id="totalScore">0</b></div>
+  </div>
+  <div class="hint" id="hint" aria-live="polite"></div>
+  <div class="guesses" id="guesses"></div>
+  <div class="hud-actions">
+    <button class="btn btn-ghost" id="giveUpBtn" title="Toon het station. Deze ronde levert dan 0 punten op.">Opgeven</button>
+    <button class="btn btn-ghost" id="historyBtn2">Mijn ritten</button>
+  </div>
+</section>
+
+<div id="confirm" role="group" aria-label="Gok bevestigen">
+  <button class="btn btn-ghost" id="cancelPin" aria-label="Pin weghalen">✕</button>
+  <button class="btn btn-primary" id="confirmBtn">Gok hier <span class="kbd-hint"><kbd>Enter</kbd></span></button>
+</div>
+
+<div id="roundCard" role="dialog" aria-live="assertive">
+  <span class="pts" id="rcPts"></span>
+  <div class="title" id="rcTitle"></div>
+  <div class="meta" id="rcMeta"></div>
+  <button class="btn btn-primary" id="nextBtn" style="width:100%">Volgend station <span class="kbd-hint"><kbd>Enter</kbd></span></button>
+</div>
+
+<div class="overlay" id="startOverlay">
+  <div class="sheet" role="dialog" aria-labelledby="startTitle">
+    <h2 id="startTitle">OVGuesser</h2>
+    <p class="sub">Vijf stations. Klik op de kaart waar je denkt dat ze liggen. Binnen 500 meter telt als gevonden.</p>
+    <div id="resumeBox"></div>
+    <div class="stack">
+      <button class="btn btn-primary" id="playDaily">Dagelijkse rit <span id="dailyState" style="font-weight:400;opacity:.8"></span></button>
+      <button class="btn btn-yellow" id="playClassic">Vrij spelen</button>
+    </div>
+    <div class="label">Stations</div>
+    <div class="seg" id="poolSeg">
+      <button data-pool="all" aria-pressed="true">Alle 393</button>
+      <button data-pool="major" aria-pressed="false">Alleen intercity</button>
+    </div>
+    <label class="toggle"><span>Direct gokken bij klikken<br><small style="color:var(--ink-2)">Uit: eerst een pin, dan bevestigen</small></span><input type="checkbox" id="instantToggle"></label>
+    <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center">
+      <button class="btn-link" id="historyBtn">Mijn ritten</button>
+      <span style="font-size:12px;color:var(--ink-3)">Prototype · gegevens blijven in deze browser</span>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="endOverlay">
+  <div class="sheet" role="dialog" aria-labelledby="endTitle">
+    <p class="sub" id="endMode" style="margin:0"></p>
+    <h2 id="endTitle"><span class="big-score" id="endScore"></span> <span style="color:var(--ink-3);font-weight:400;font-size:18px">/ 25.000</span></h2>
+    <div id="endBadge"></div>
+    <table class="rounds" id="endRounds"></table>
+    <div class="stack">
+      <button class="btn btn-yellow" id="shareBtn">Deel resultaat</button>
+      <div class="row">
+        <button class="btn btn-primary" id="againBtn">Nog een rit</button>
+        <button class="btn btn-ghost" id="endHistoryBtn">Mijn ritten</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<aside id="drawer" aria-label="Mijn ritten">
+  <header><h2>Mijn ritten</h2><button class="btn btn-ghost" id="closeDrawer" aria-label="Sluiten">✕</button></header>
+  <div class="body">
+    <div class="tiles" id="tiles"></div>
+    <div id="runList"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn btn-ghost" id="exportBtn">Exporteer</button>
+      <button class="btn btn-ghost" id="importBtn">Importeer</button>
+      <button class="btn btn-ghost" id="wipeBtn">Wis alles</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json" hidden>
+    <p class="storage-note" id="storageNote"></p>
+  </div>
+</aside>
+
+<div id="toast" role="status"></div>
+<div class="sr" aria-live="polite" id="announcer"></div>
+
+<script>
+"use strict";
+// ---------- constants & pure game logic (becomes src/game/*.ts, unit tested) ----------
+const ROUNDS = 5, MAX_ROUND = 5000, HIT_RADIUS_M = 500;
+const NL_BOUNDS = [[3.0, 50.6], [7.4, 53.7]];
+const fmtInt = n => n.toLocaleString("nl-NL");
+const fmtDist = m => m >= 10000 ? `${Math.round(m / 1000)} km` : m >= 1000 ? `${(m / 1000).toFixed(1).replace(".", ",")} km` : `${Math.round(m)} m`;
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371000, p = Math.PI / 180;
+  const a = Math.sin((lat2 - lat1) * p / 2) ** 2 + Math.cos(lat1 * p) * Math.cos(lat2 * p) * Math.sin((lng2 - lng1) * p / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+// Every miss costs a fixed 250 plus 7.5 points per km, capped at 1000 per guess.
+const missPenalty = m => 250 + Math.min(750, Math.round(7.5 * m / 1000));
+function roundScore(round) {
+  if (round.outcome === "revealed") return 0;
+  let s = MAX_ROUND;
+  for (const g of round.guesses) if (g[2] > HIT_RADIUS_M) s -= missPenalty(g[2]);
+  return Math.max(0, s);
+}
+const runTotal = run => run.rounds.reduce((t, r) => t + (r.outcome ? roundScore(r) : 0), 0);
+
+function mulberry32(seed) {
+  return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+function hashString(s) { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; }
+function pickStations(pool, seed) {
+  const rnd = mulberry32(seed), arr = pool.slice();
+  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+  return arr.slice(0, ROUNDS);
+}
+const todayKey = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Amsterdam" }).format(new Date());
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+
+// ---------- IndexedDB repository (becomes src/storage/runs.ts) ----------
+const DB_NAME = "ovguesser-prototype", DB_VERSION = 1;
+let dbPromise;
+function openDb() {
+  dbPromise ??= new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      const runs = db.createObjectStore("runs", { keyPath: "id" });
+      runs.createIndex("startedAt", "startedAt");
+      runs.createIndex("status", "status");
+      runs.createIndex("daily", ["mode", "dateKey"]);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return dbPromise;
+}
+async function tx(mode, fn) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const t = db.transaction("runs", mode), store = t.objectStore("runs");
+    let result; Promise.resolve(fn(store)).then(r => { result = r; });
+    t.oncomplete = () => resolve(result);
+    t.onerror = t.onabort = () => reject(t.error);
+  });
+}
+const reqP = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const repo = {
+  put: run => tx("readwrite", s => { s.put(run); }),
+  all: () => tx("readonly", s => reqP(s.getAll())).then(rs => rs.sort((a, b) => b.startedAt - a.startedAt)),
+  active: () => tx("readonly", s => reqP(s.index("status").getAll("active"))).then(rs => rs.sort((a, b) => b.startedAt - a.startedAt)[0]),
+  daily: key => tx("readonly", s => reqP(s.index("daily").getAll(["daily", key]))),
+  clear: () => tx("readwrite", s => { s.clear(); }),
+  bulkPut: runs => tx("readwrite", s => { runs.forEach(r => s.put(r)); }),
+};
+async function save(run) {
+  try { await repo.put(run); }
+  catch (e) { console.error(e); toast("Opslaan lukte niet. Je spel gaat gewoon door."); }
+}
+
+// ---------- app state ----------
+let STATIONS = [], byCode = {};
+const settings = JSON.parse(localStorage.getItem("ovg-settings") || '{"pool":"all","instant":false}');
+const S = { phase: "start", run: null, pending: null, busy: false };
+const $ = id => document.getElementById(id);
+const current = () => S.run.rounds[S.run.current];
+const currentStation = () => byCode[current().code];
+
+// ---------- map ----------
+let map, markers = [];
+async function initMap() {
+  const style = await fetch("https://tiles.openfreemap.org/styles/positron").then(r => r.json());
+  // No text labels (they would give away place names) and no basemap railways (we draw our own).
+  style.layers = style.layers.filter(l => l.type !== "symbol" && !l.id.startsWith("railway"));
+  // A little more contrast on water so coastlines and lakes read as landmarks.
+  for (const l of style.layers) if (l.id === "water") l.paint["fill-color"] = "#c6d4e1";
+  map = new maplibregl.Map({
+    container: "map", style, bounds: NL_BOUNDS, maxBounds: [[-1.0, 48.0], [11.5, 56.0]],
+    minZoom: 5, maxZoom: 16, dragRotate: false, pitchWithRotate: false, touchPitch: false,
+    attributionControl: { compact: true, customAttribution: "Spoorlijnen © OpenStreetMap · Stations: Rijden de Treinen (CC0)" },
+  });
+  map.touchZoomRotate.disableRotation();
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+  map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
+  await new Promise(r => map.on("load", r));
+  document.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
+  try {
+    const rails = await fetch("data/rails.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+    map.addSource("rails", { type: "geojson", data: rails });
+    map.addLayer({ id: "rails-tourism", type: "line", source: "rails", filter: ["==", ["get", "u"], "t"],
+      paint: { "line-color": "#9ca3af", "line-width": 1.2, "line-dasharray": [2, 2] } });
+    map.addLayer({ id: "rails", type: "line", source: "rails", filter: ["!=", ["get", "u"], "t"],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#4b5563", "line-width": ["interpolate", ["linear"], ["zoom"], 6, ["match", ["get", "u"], "m", 1.4, 0.9], 12, ["match", ["get", "u"], "m", 3, 2]] } });
+  } catch (e) {
+    console.warn("rails unavailable", e);
+    toast("Spoorlijnen niet geladen. Spelen kan nog steeds.");
+  }
+  map.addSource("reveal", { type: "geojson", data: emptyFC() });
+  map.addLayer({ id: "reveal-line", type: "line", source: "reveal", paint: { "line-color": "#002d72", "line-width": 2, "line-dasharray": [1.5, 1.5] } });
+  map.on("click", e => onMapClick(e.lngLat));
+}
+const emptyFC = () => ({ type: "FeatureCollection", features: [] });
+
+function el(html) { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstChild; }
+function drawMarkers() {
+  markers.forEach(m => m.remove()); markers = [];
+  const src = map.getSource("reveal"); src && src.setData(emptyFC());
+  if (!S.run || S.phase === "start") return;
+  const round = current(), gs = round.guesses;
+  gs.forEach((g, i) => {
+    const latest = i === gs.length - 1;
+    const m = new maplibregl.Marker({ element: el(`<div class="pin guess ${latest ? "latest" : ""}"><span class="pin-label">${i + 1} · ${fmtDist(g[2])}</span></div>`) })
+      .setLngLat([g[1], g[0]]).addTo(map);
+    markers.push(m);
+  });
+  if (S.pending) markers.push(new maplibregl.Marker({ element: el(`<div class="pin pending"></div>`) }).setLngLat(S.pending).addTo(map));
+  if (round.outcome) {
+    const st = currentStation();
+    markers.push(new maplibregl.Marker({ element: el(`<div class="station-pin"><div class="mini-sign">${st.name}</div><div class="dot"></div></div>`), anchor: "bottom", offset: [0, 7] })
+      .setLngLat([st.lng, st.lat]).addTo(map));
+    const last = gs[gs.length - 1];
+    if (last) src.setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[last[1], last[0]], [st.lng, st.lat]] } }] });
+  }
+}
+
+// ---------- rendering ----------
+let shownRoundScore = MAX_ROUND;
+function render() {
+  const inGame = S.run && S.phase !== "start";
+  $("hud").style.display = inGame ? "block" : "none";
+  $("startOverlay").classList.toggle("show", S.phase === "start");
+  $("endOverlay").classList.toggle("show", S.phase === "runEnd");
+  $("roundCard").classList.toggle("show", S.phase === "roundEnd");
+  $("confirm").classList.toggle("show", S.phase === "guessing" && !!S.pending);
+  if (map) drawMarkers();
+  if (!inGame) return;
+  const run = S.run, round = current();
+  $("progress").innerHTML = run.rounds.map((r, i) => `<i class="${r.outcome ? "done" : i === run.current ? "now" : ""}"></i>`).join("");
+  $("stationName").textContent = byCode[round.code].name;
+  const rs = roundScore(round);
+  $("roundScore").textContent = fmtInt(rs);
+  if (rs !== shownRoundScore) {
+    const box = $("roundScoreBox");
+    box.classList.remove("flash-down", "flash-up"); void box.offsetWidth; // restart the animation
+    box.classList.add(rs < shownRoundScore ? "flash-down" : "flash-up");
+    $("delta").textContent = rs < shownRoundScore ? `−${fmtInt(shownRoundScore - rs)}` : "";
+    shownRoundScore = rs;
+  }
+  $("totalScore").textContent = fmtInt(runTotal(run));
+  const gs = round.guesses, last = gs[gs.length - 1], prev = gs[gs.length - 2];
+  let hint = "Klik op de kaart om te gokken.";
+  if (last && !round.outcome) {
+    const trend = prev ? (last[2] < prev[2] ? " · warmer" : " · kouder") : "";
+    hint = `<strong>${fmtDist(last[2])}</strong> ernaast${trend}. Probeer opnieuw.`;
+  }
+  if (round.outcome) hint = round.outcome === "found" ? `Gevonden in ${gs.length} ${gs.length === 1 ? "poging" : "pogingen"}.` : "Opgegeven.";
+  $("hint").innerHTML = hint;
+  $("guesses").innerHTML = gs.map((g, i) => `<span class="chip ${i && g[2] < gs[i - 1][2] ? "warmer" : ""}">${fmtDist(g[2])}</span>`).join("");
+  $("giveUpBtn").disabled = S.phase !== "guessing";
+}
+
+// ---------- actions (a reducer in the real app) ----------
+function newRun(mode) {
+  const pool = settings.pool === "major" ? STATIONS.filter(s => s.tier <= 2) : STATIONS;
+  const dateKey = todayKey();
+  const seed = mode === "daily" ? hashString("daily:" + dateKey) : (Math.random() * 2 ** 32) >>> 0;
+  const dailyPool = mode === "daily" ? STATIONS : pool; // daily is the same for everyone
+  const picked = pickStations(dailyPool, seed);
+  return { id: uid(), v: 1, mode, pool: mode === "daily" ? "all" : settings.pool, seed, dateKey, startedAt: Date.now(), finishedAt: null,
+    status: "active", current: 0, rounds: picked.map(s => ({ code: s.code, startedAt: null, guesses: [], outcome: null })) };
+}
+async function startRun(mode) {
+  const old = await repo.active().catch(() => null);
+  if (old) { old.status = "abandoned"; await save(old); }
+  S.run = newRun(mode); S.pending = null;
+  current().startedAt = Date.now();
+  await save(S.run);
+  beginRound();
+}
+function beginRound() {
+  S.phase = "guessing"; S.pending = null; shownRoundScore = roundScore(current());
+  $("delta").textContent = "";
+  map.fitBounds(NL_BOUNDS, { padding: hudPadding(), duration: 600 });
+  render();
+  announce(`Ronde ${S.run.current + 1}. Waar ligt station ${currentStation().name}?`);
+}
+function onMapClick(lngLat) {
+  if (S.phase !== "guessing" || S.busy) return;
+  if (settings.instant) return submitGuess(lngLat.lat, lngLat.lng);
+  S.pending = [lngLat.lng, lngLat.lat]; render();
+}
+async function submitGuess(lat, lng) {
+  if (S.phase !== "guessing" || S.busy) return;
+  S.busy = true;
+  const round = current(), st = currentStation();
+  const d = Math.round(haversine(lat, lng, st.lat, st.lng));
+  round.guesses.push([+lat.toFixed(5), +lng.toFixed(5), d, Date.now() - round.startedAt]);
+  S.pending = null;
+  if (d <= HIT_RADIUS_M) round.outcome = "found";
+  else if (roundScore(round) === 0) round.outcome = "revealed"; // out of points: the round ends by itself
+  await save(S.run);
+  S.busy = false;
+  if (round.outcome) endRound(); else { render(); announce(`${fmtDist(d)} ernaast.`); }
+}
+async function giveUp() {
+  if (S.phase !== "guessing") return;
+  current().outcome = "revealed"; S.pending = null;
+  await save(S.run); endRound();
+}
+function endRound() {
+  S.phase = "roundEnd";
+  const round = current(), st = currentStation(), pts = roundScore(round), n = round.guesses.length;
+  const found = round.outcome === "found";
+  $("rcTitle").textContent = found ? (n === 1 ? "In één keer goed!" : "Gevonden!") : "Helaas, 0 punten";
+  $("rcMeta").textContent = found ? `${st.name} · ${n} ${n === 1 ? "poging" : "pogingen"}` : `${st.name} lag hier. Volgende ronde beter.`;
+  $("rcPts").textContent = `+${fmtInt(pts)}`;
+  $("nextBtn").textContent = S.run.current === ROUNDS - 1 ? "Bekijk je rit" : "Volgend station";
+  $("nextBtn").disabled = false;
+  render();
+  const pts2 = round.guesses.map(g => [g[1], g[0]]).concat([[st.lng, st.lat]]);
+  const b = pts2.reduce((bb, p) => bb.extend(p), new maplibregl.LngLatBounds(pts2[0], pts2[0]));
+  map.fitBounds(b, { padding: hudPadding(true), maxZoom: 12, duration: 900 });
+  announce($("rcTitle").textContent + " " + $("rcMeta").textContent);
+  setTimeout(() => $("nextBtn").focus(), 50);
+}
+async function nextRound() {
+  if (S.phase !== "roundEnd") return; // guards the old double-click bug
+  $("nextBtn").disabled = true;
+  if (S.run.current === ROUNDS - 1) {
+    S.run.status = "finished"; S.run.finishedAt = Date.now(); S.run.total = runTotal(S.run);
+    await save(S.run); return showEnd();
+  }
+  S.run.current++; current().startedAt = Date.now();
+  await save(S.run); beginRound();
+}
+async function showEnd() {
+  S.phase = "runEnd";
+  const run = S.run, total = runTotal(run);
+  const all = await repo.all().catch(() => []);
+  const prevBest = Math.max(0, ...all.filter(r => r.status === "finished" && r.id !== run.id && r.mode === run.mode).map(r => r.total));
+  $("endMode").textContent = run.mode === "daily" ? `Dagelijkse rit · ${nlDate(run.dateKey)}` : "Vrij spelen";
+  $("endScore").textContent = fmtInt(total);
+  $("endBadge").innerHTML = total > prevBest && prevBest > 0 ? `<span class="badge">Persoonlijk record</span> <small style="color:var(--ink-2)">vorige: ${fmtInt(prevBest)}</small>` : "";
+  $("endRounds").innerHTML = run.rounds.map(r => `<tr><td>${square(r)} ${byCode[r.code].name}</td><td class="muted">${r.outcome === "found" ? r.guesses.length + "×" : "opgegeven"}</td><td>${fmtInt(roundScore(r))}</td></tr>`).join("");
+  render();
+}
+const square = r => { const s = roundScore(r); return s >= 4000 ? "🟩" : s >= 2500 ? "🟨" : s > 0 ? "🟧" : "🟥"; };
+const nlDate = k => { const [y, m, d] = k.split("-"); return `${+d}-${+m}-${y}`; };
+function shareText(run) {
+  const head = run.mode === "daily" ? `OVGuesser dagelijkse rit ${nlDate(run.dateKey)}` : "OVGuesser";
+  const line = run.rounds.map(square).join("");
+  const tries = run.rounds.map(r => r.outcome === "found" ? r.guesses.length : "✗").join(" ");
+  return `${head}\n${line}  ${fmtInt(runTotal(run))} / 25.000\nPogingen: ${tries}\novguesser.nl`;
+}
+async function share() {
+  const text = shareText(S.run);
+  if (navigator.share && matchMedia("(pointer:coarse)").matches) { try { await navigator.share({ text }); return; } catch {} }
+  try { await navigator.clipboard.writeText(text); toast("Gekopieerd naar klembord"); }
+  catch { prompt("Kopieer je resultaat:", text); }
+}
+const hudPadding = (bottom) => {
+  const mobile = innerWidth <= 640;
+  return mobile ? { top: 215, bottom: bottom ? 170 : 50, left: 20, right: 20 } : { top: 60, bottom: bottom ? 160 : 60, left: 400, right: 60 };
+};
+
+// ---------- start screen & history ----------
+async function showStart() {
+  S.phase = "start"; S.pending = null;
+  const mobile = innerWidth <= 640;
+  map.fitBounds(NL_BOUNDS, { padding: mobile ? { top: 16, bottom: Math.round(innerHeight * 0.55), left: 8, right: 8 } : 40, duration: 0 });
+  const active = await repo.active().catch(() => null);
+  $("resumeBox").innerHTML = active ? `<div class="resume"><span>Rit bezig: ronde ${active.current + 1}/5, ${fmtInt(runTotal(active))} punten</span><button class="btn btn-primary" id="resumeBtn" style="padding:7px 12px;font-size:13px">Hervat</button></div>` : "";
+  if (active) $("resumeBtn").onclick = () => { S.run = active; if (!current().startedAt) current().startedAt = Date.now(); current().outcome ? endRound() : beginRound(); };
+  const daily = await repo.daily(todayKey()).catch(() => []);
+  const done = daily.find(r => r.status === "finished");
+  $("dailyState").textContent = done ? `· gespeeld (${fmtInt(done.total)})` : "· nieuw";
+  document.querySelectorAll("#poolSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.pool === settings.pool));
+  $("instantToggle").checked = settings.instant;
+  render();
+}
+async function openHistory() {
+  const runs = (await repo.all().catch(() => [])).filter(r => r.status !== "abandoned");
+  const fin = runs.filter(r => r.status === "finished");
+  const avg = fin.length ? Math.round(fin.reduce((a, r) => a + r.total, 0) / fin.length) : 0;
+  const best = Math.max(0, ...fin.map(r => r.total));
+  const dailyKeys = new Set(fin.filter(r => r.mode === "daily").map(r => r.dateKey));
+  let streak = 0; const d = new Date(todayKey() + "T12:00:00");
+  if (!dailyKeys.has(todayKey())) d.setDate(d.getDate() - 1);
+  while (dailyKeys.has(d.toISOString().slice(0, 10))) { streak++; d.setDate(d.getDate() - 1); }
+  $("tiles").innerHTML = [["Ritten", fin.length], ["Gemiddeld", fmtInt(avg)], ["Beste", fmtInt(best)], ["Dagelijkse reeks", streak]]
+    .map(([k, v]) => `<div class="tile"><span>${k}</span><b>${v}</b></div>`).join("");
+  $("runList").innerHTML = runs.length ? runs.map(r => `
+    <details class="run"><summary><span><span class="mode-tag">${r.mode === "daily" ? "dagelijks" : r.pool === "major" ? "intercity" : "vrij"}</span>
+      <span class="when">${new Date(r.startedAt).toLocaleString("nl-NL", { dateStyle: "medium", timeStyle: "short" })}</span>
+      ${r.status === "active" ? '<span class="when"> · bezig</span>' : ""}</span><b>${fmtInt(r.total ?? runTotal(r))}</b></summary>
+      <div class="detail">${r.rounds.map(x => `<div><span>${square(x)} ${byCode[x.code]?.name ?? x.code}</span><span>${x.outcome ? (x.outcome === "found" ? x.guesses.length + "× · " : "opgegeven · ") + fmtInt(roundScore(x)) : "–"}</span></div>`).join("")}</div>
+    </details>`).join("") : `<p style="color:var(--ink-2);font-size:14px">Nog geen ritten. Speel er een en hij verschijnt hier.</p>`;
+  let note = `${runs.length} ritten, ongeveer ${(new Blob([JSON.stringify(runs)]).size / 1024).toFixed(1).replace(".", ",")} kB.`;
+  if (navigator.storage?.estimate) {
+    const est = await navigator.storage.estimate();
+    note += ` De browser staat deze site ongeveer ${fmtInt(Math.round(est.quota / 1024 / 1024))} MB toe.`;
+  }
+  if (navigator.storage?.persisted) note += (await navigator.storage.persisted()) ? " Opslag is gemarkeerd als blijvend." : " De browser mag deze gegevens opruimen bij ruimtegebrek; exporteer af en toe.";
+  $("storageNote").textContent = note;
+  $("drawer").classList.add("show");
+}
+async function exportRuns() {
+  const runs = await repo.all();
+  const blob = new Blob([JSON.stringify({ app: "ovguesser", format: 1, exportedAt: new Date().toISOString(), runs }, null, 1)], { type: "application/json" });
+  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `ovguesser-ritten-${todayKey()}.json` });
+  a.click(); URL.revokeObjectURL(a.href);
+}
+async function importRuns(file) {
+  try {
+    const data = JSON.parse(await file.text());
+    if (data.app !== "ovguesser" || !Array.isArray(data.runs)) throw new Error("geen OVGuesser-export");
+    const valid = data.runs.filter(r => r && typeof r.id === "string" && Array.isArray(r.rounds) && r.rounds.every(x => byCode[x.code]));
+    await repo.bulkPut(valid); // same id overwrites, so importing twice is harmless
+    toast(`${valid.length} ritten geïmporteerd${valid.length < data.runs.length ? `, ${data.runs.length - valid.length} overgeslagen` : ""}`);
+    openHistory();
+  } catch (e) { toast("Importeren mislukt: " + e.message); }
+}
+
+// ---------- misc ----------
+let toastTimer;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2400); }
+function announce(msg) { $("announcer").textContent = msg; }
+function saveSettings() { localStorage.setItem("ovg-settings", JSON.stringify(settings)); }
+
+$("confirmBtn").onclick = () => S.pending && submitGuess(S.pending[1], S.pending[0]);
+$("cancelPin").onclick = () => { S.pending = null; render(); };
+$("giveUpBtn").onclick = giveUp;
+$("nextBtn").onclick = nextRound;
+$("playDaily").onclick = () => startRun("daily");
+$("playClassic").onclick = () => startRun("classic");
+$("againBtn").onclick = () => startRun("classic");
+$("homeBtn").onclick = showStart;
+$("shareBtn").onclick = share;
+[$("historyBtn"), $("historyBtn2"), $("endHistoryBtn")].forEach(b => b.onclick = openHistory);
+$("closeDrawer").onclick = () => $("drawer").classList.remove("show");
+$("exportBtn").onclick = exportRuns;
+$("importBtn").onclick = () => $("importFile").click();
+$("importFile").onchange = e => e.target.files[0] && importRuns(e.target.files[0]);
+$("wipeBtn").onclick = async () => { if (confirm("Alle ritten in deze browser wissen?")) { await repo.clear(); openHistory(); toast("Alles gewist"); } };
+$("poolSeg").onclick = e => { const p = e.target.dataset?.pool; if (!p) return; settings.pool = p; saveSettings(); showStart(); };
+$("instantToggle").onchange = e => { settings.instant = e.target.checked; saveSettings(); };
+addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    if (S.phase === "guessing" && S.pending) { e.preventDefault(); submitGuess(S.pending[1], S.pending[0]); }
+    else if (S.phase === "roundEnd" && document.activeElement?.id !== "nextBtn") { e.preventDefault(); nextRound(); }
+  }
+  if (e.key === "Escape") { if ($("drawer").classList.contains("show")) $("drawer").classList.remove("show"); else if (S.pending) { S.pending = null; render(); } }
+});
+
+(async function boot() {
+  try {
+    STATIONS = await fetch("data/stations.json").then(r => r.json());
+    STATIONS.forEach(s => byCode[s.code] = s);
+    document.querySelector('#poolSeg [data-pool="all"]').textContent = `Alle ${STATIONS.length}`;
+    await initMap();
+    navigator.storage?.persist?.().catch(() => {});
+    $("loading").remove();
+    showStart();
+  } catch (e) {
+    console.error(e);
+    $("loading").textContent = "Laden mislukt. Ververs de pagina.";
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+.git
+node_modules
+dist
+old_version
+docs
+test-results
+playwright-report
+data/raw/*.geojson
+*.log
+.env
