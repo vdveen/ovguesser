@@ -1,6 +1,15 @@
 # OvGuesser
 
-A guessing game for Dutch train stations: the player is shown a station name and clicks on a map where they think it is. The new version is being built at the repo root. The original version lives in `old_version/` as a reference.
+A guessing game for Dutch train stations: the player is shown a station name and clicks on a map where they think it is. The current version lives at the repo root (see README.md). The original Replit version lives in `old_version/` as a reference.
+
+## Current version
+
+- Game rules live in `src/game/` as pure functions and are shared with the server. Change scoring only in `src/game/scoring.ts`.
+- Player runs are stored in the browser (IndexedDB, `src/storage/`). Keep one record per run; don't add per-guess keys.
+- The server (`server/`) stores finished runs anonymously in Postgres and recomputes scores itself. Migrations are an append-only list in `server/db.ts`; never edit a shipped one.
+- Tests: `npm test` (set `TEST_DATABASE_URL` for the Postgres tests) and `npm run test:e2e` after `npm run build`.
+- UI copy is Dutch first, with English in `src/i18n/strings.ts`.
+- Deployed on Railway (project `ovguesser`, service `ovguesser`, with a `Postgres` service). The old version's tables (`train_stations`, `game_results`, `game_sessions`, `game_stats`) are still in that database and untouched.
 
 ## old_version/
 
