@@ -11,6 +11,9 @@ export interface AppOptions {
   /** Directory with the built client. Omit in tests to serve the API only. */
   clientDir?: string;
   now?: () => number;
+  /** Hosts that should permanently redirect to `canonicalHost`, e.g. ovguesser.com -> ovguesser.nl. */
+  redirectHosts?: string[];
+  canonicalHost?: string;
 }
 
 const CSP = [
@@ -43,8 +46,17 @@ function rateLimiter(limit: number, windowMs: number) {
   };
 }
 
-export function createApp({ sql, clientDir, now = Date.now }: AppOptions) {
+export function createApp({ sql, clientDir, now = Date.now, redirectHosts = [], canonicalHost }: AppOptions) {
   const app = new Hono();
+
+  if (canonicalHost && redirectHosts.length) {
+    app.use("*", async (c, next) => {
+      const host = (c.req.header("x-forwarded-host") ?? c.req.header("host") ?? "").split(":")[0].toLowerCase();
+      if (!redirectHosts.includes(host) || c.req.path === "/healthz") return next();
+      const url = new URL(c.req.url);
+      return c.redirect(`https://${canonicalHost}${url.pathname}${url.search}`, 301);
+    });
+  }
   const allowWrite = rateLimiter(30, 60_000);
   let stationCache: { at: number; data: Record<string, StationStat> } | null = null;
 

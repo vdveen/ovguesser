@@ -31,7 +31,12 @@ async function database(): Promise<Sql | null> {
 }
 
 const sql = await database();
-const server = serve({ fetch: createApp({ sql, clientDir }).fetch, port, hostname: "0.0.0.0" }, (info) =>
+const redirectHosts = (process.env.REDIRECT_HOSTS ?? "")
+  .split(",")
+  .map((h) => h.trim().toLowerCase())
+  .filter(Boolean);
+const app = createApp({ sql, clientDir, redirectHosts, canonicalHost: process.env.CANONICAL_HOST });
+const server = serve({ fetch: app.fetch, port, hostname: "0.0.0.0" }, (info) =>
   console.log(`OVGuesser listening on :${info.port}`),
 );
 

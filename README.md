@@ -49,4 +49,8 @@ npm run lint
 
 ## Deployment
 
-Railway builds the `Dockerfile` (see `railway.json`) and checks `/healthz`. The service needs `DATABASE_URL`; it applies its own migrations on start. Its tables are prefixed `ovg_`.
+Railway builds the `Dockerfile` and checks `/healthz`. Environment variables:
+
+- `DATABASE_URL`: Postgres. The server applies its own migrations on start; its tables are prefixed `ovg_`. Without it the game still works, minus shared statistics.
+- `PORT`: defaults to 8080.
+- `CANONICAL_HOST` and `REDIRECT_HOSTS`: e.g. `ovguesser.nl` and `ovguesser.com,www.ovguesser.com`. Requests for a redirect host get a 301 to the canonical host.

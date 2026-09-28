@@ -147,6 +147,23 @@ describe.skipIf(!url)("API with Postgres", () => {
   });
 });
 
+describe("canonical host", () => {
+  it("redirects other domains to ovguesser.nl, keeping the path", async () => {
+    const app = createApp({
+      sql: null,
+      redirectHosts: ["ovguesser.com", "www.ovguesser.com"],
+      canonicalHost: "ovguesser.nl",
+    });
+    const res = await app.request("https://ovguesser.com/some/path?x=1", { headers: { host: "ovguesser.com" } });
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe("https://ovguesser.nl/some/path?x=1");
+    const same = await app.request("https://ovguesser.nl/healthz", { headers: { host: "ovguesser.nl" } });
+    expect(same.status).toBe(200);
+    const health = await app.request("https://ovguesser.com/healthz", { headers: { host: "ovguesser.com" } });
+    expect(health.status).toBe(200);
+  });
+});
+
 describe("API without a database", () => {
   it("keeps the game playable and says why stats are missing", async () => {
     const app = createApp({ sql: null });
