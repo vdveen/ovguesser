@@ -9,7 +9,7 @@ A guessing game for Dutch train stations: the player is shown a station name and
 - The server (`server/`) stores finished runs anonymously in Postgres and recomputes scores itself. Migrations are an append-only list in `server/db.ts`; never edit a shipped one.
 - Tests: `npm test` (set `TEST_DATABASE_URL` for the Postgres tests) and `npm run test:e2e` after `npm run build`.
 - UI copy is Dutch first, with English in `src/i18n/strings.ts`.
-- Deployed on Railway (project `ovguesser`, service `ovguesser`, with a `Postgres` service). The old version's tables (`train_stations`, `game_results`, `game_sessions`, `game_stats`) are still in that database and untouched.
+- Deployed on Railway (project `ovguesser`, service `ovguesser`, with a `Postgres` service). Pushes to `main` deploy automatically after CI passes. Service settings are in `.railway/railway.ts` (applied with `railway config plan` / `apply`, never read at deploy time); there is no `railway.json`. The old version's tables (`train_stations`, `game_results`, `game_sessions`, `game_stats`) are still in that database and untouched.
 
 ## old_version/
 

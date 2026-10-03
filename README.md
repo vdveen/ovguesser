@@ -49,7 +49,9 @@ npm run lint
 
 ## Deployment
 
-Railway builds the `Dockerfile` and checks `/healthz`. Environment variables:
+Railway deploys every push to `main` once the GitHub checks pass. The service settings (Dockerfile build, start command, `/healthz` health check, restart retries, domains, GitHub source) live in `.railway/railway.ts`. Railway doesn't read that file during deploys; change it, then run `railway config plan` to preview and `railway config apply` to apply. It's a named partial that manages only the app service, so the Postgres database is left alone.
+
+Environment variables:
 
 - `DATABASE_URL`: Postgres. The server applies its own migrations on start; its tables are prefixed `ovg_`. Without it the game still works, minus shared statistics.
 - `PORT`: defaults to 8080.
