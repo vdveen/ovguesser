@@ -13,11 +13,13 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
     if (!this.state.failed) return this.props.children;
     const t = document.documentElement.lang === "en" ? DICTIONARIES.en : DICTIONARIES.nl;
     return (
-      <div className="overlay show">
-        <div className="sheet" role="alert">
-          <h2>{t.crashTitle}</h2>
-          <p className="sub">{t.crashBody}</p>
-          <button type="button" className="btn btn-primary wide" onClick={() => location.reload()}>
+      <div className="crash" role="alert">
+        <div className="band">
+          <h1>{t.crashTitle}</h1>
+        </div>
+        <div className="body">
+          <p>{t.crashBody}</p>
+          <button type="button" className="btn" onClick={() => location.reload()}>
             {t.reload}
           </button>
         </div>

@@ -12,16 +12,10 @@ export function ConfirmBar({
   const { t } = useI18n();
   return (
     <div className={`confirm${show ? " show" : ""}`} role="group" aria-hidden={!show}>
-      <button
-        type="button"
-        className="btn btn-ghost"
-        onClick={onCancel}
-        aria-label={t("removePin")}
-        tabIndex={show ? 0 : -1}
-      >
-        ✕
+      <button type="button" className="btn line" onClick={onCancel} tabIndex={show ? 0 : -1}>
+        {t("removePin")}
       </button>
-      <button type="button" className="btn btn-primary" onClick={onConfirm} tabIndex={show ? 0 : -1}>
+      <button type="button" className="btn go" onClick={onConfirm} tabIndex={show ? 0 : -1}>
         {t("confirm")} <kbd className="kbd-hint">Enter</kbd>
       </button>
     </div>

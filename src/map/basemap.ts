@@ -14,7 +14,7 @@ export async function loadBasemap(): Promise<{ style: StyleSpecification; ok: bo
     style.layers = style.layers.filter((l) => l.type !== "symbol" && !l.id.startsWith("railway"));
     for (const layer of style.layers) {
       // A little more contrast on water so coastlines and lakes read as landmarks.
-      if (layer.id === "water" && layer.type === "fill") layer.paint = { ...layer.paint, "fill-color": "#c6d4e1" };
+      if (layer.id === "water" && layer.type === "fill") layer.paint = { ...layer.paint, "fill-color": "#c7d2de" };
     }
     delete style.sprite;
     delete style.glyphs;

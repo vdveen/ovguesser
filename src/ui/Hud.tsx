@@ -1,111 +1,92 @@
-import { useEffect, useRef, useState } from "react";
 import { formatDistance } from "../game/distance";
 import { currentRound } from "../game/run";
-import { MAX_ROUND_SCORE, roundScore, runTotal } from "../game/scoring";
+import { missPenalty, roundScore, runTotal } from "../game/scoring";
 import type { Run } from "../game/types";
 import { useI18n } from "../i18n/i18n";
 import type { StringKey } from "../i18n/strings";
+import { isTouch } from "./device";
 import { Rich } from "./rich";
 
 interface Props {
   run: Run;
+  modeLabel: string;
   hasPin: boolean;
   canGiveUp: boolean;
   onHome: () => void;
   onGiveUp: () => void;
-  onHistory: () => void;
 }
 
-export function Hud({ run, hasPin, canGiveUp, onHome, onGiveUp, onHistory }: Props) {
+/** The station sign across the top: the question in the blue band, score and feedback in the black strip. */
+export function Hud({ run, modeLabel, hasPin, canGiveUp, onHome, onGiveUp }: Props) {
   const { t, num, locale } = useI18n();
+  const touch = isTouch();
   const round = currentRound(run);
-  const score = roundScore(round);
+  const done = !!round.outcome;
   const gs = round.guesses;
   const last = gs.at(-1);
   const prev = gs.at(-2);
 
-  // Flash the score when it changes: red when points are lost, green when a new round starts.
-  const [flash, setFlash] = useState<{ kind: "down" | "up"; delta: number; id: number } | null>(null);
-  const shown = useRef({ id: `${run.id}:${run.current}`, score });
-  useEffect(() => {
-    const key = `${run.id}:${run.current}`;
-    const before = shown.current;
-    shown.current = { id: key, score };
-    if (before.id !== key) {
-      if (score === MAX_ROUND_SCORE) setFlash({ kind: "up", delta: 0, id: Date.now() });
-      return;
-    }
-    if (score < before.score) setFlash({ kind: "down", delta: before.score - score, id: Date.now() });
-  }, [run.id, run.current, score]);
-
-  let hint: string;
-  if (round.outcome === "found")
-    hint = t("hintFound", { n: gs.length, attempts: t(gs.length === 1 ? "attempt" : "attempts") });
-  else if (round.outcome === "revealed") hint = t("hintRevealed");
-  else if (hasPin) hint = t("hintPin");
-  else if (last) {
-    const key: StringKey = !prev ? "hintMiss" : last[2] < prev[2] ? "hintMissWarmer" : "hintMissColder";
-    hint = t(key, { distance: formatDistance(last[2], locale) });
-    if (last[2] < 5000) hint += ` ${t("hintZoom")}`;
-  } else hint = t("hintStart");
+  let hint = "";
+  let cost = 0;
+  if (!done) {
+    if (hasPin) hint = t(touch ? "hintPinTap" : "hintPinClick");
+    else if (last) {
+      const key: StringKey = !prev ? "hintMiss" : last[2] < prev[2] ? "hintMissCloser" : "hintMissFurther";
+      hint = t(key, { distance: formatDistance(last[2], locale) });
+      if (last[2] < 5000) hint += ` ${t("hintZoom")}`;
+      cost = missPenalty(last[2]);
+    } else hint = t(touch ? "hintStartTap" : "hintStartClick");
+  }
 
   return (
-    <section className="hud" aria-label={t("appName")}>
-      <div className="hud-top">
-        <button type="button" className="brand" onClick={onHome} aria-label={t("menu")}>
-          <span className="brand-mark" aria-hidden="true">
-            ▶
+    <header className="top play" data-inset="top">
+      <div className="band">
+        <div className="brand desk-only">
+          <b>{t("appName")}</b>
+          <span>{modeLabel}</span>
+        </div>
+        <div className="question">
+          <span className="label">{t("whereIs")}</span>
+          <h1 data-testid="station-name">{round.name}</h1>
+        </div>
+        <div className="progress">
+          <span>{t("progress", { n: run.current + 1 })}</span>
+          <span className="squares" aria-hidden="true">
+            {run.rounds.map((r, i) => (
+              <i key={r.code} className={r.outcome ? "done" : i === run.current ? "now" : ""} />
+            ))}
           </span>
-          {t("appName")}
-        </button>
-        <div className="progress" role="img" aria-label={t("progress", { n: run.current + 1 })}>
-          {run.rounds.map((r, i) => (
-            <i key={r.code} className={r.outcome ? "done" : i === run.current ? "now" : ""} />
-          ))}
         </div>
-      </div>
-      <div className="ns-sign">
-        <small>{t("whereIs")}</small>
-        <span data-testid="station-name">{round.name}</span>
-      </div>
-      <div className="scores">
-        <div key={flash?.id} className={`score${flash ? ` flash-${flash.kind}` : ""}`}>
-          <span>{t("roundScore")}</span>
-          <b data-testid="round-score">{num(score)}</b>
-          {flash?.kind === "down" && <em className="delta">−{num(flash.delta)}</em>}
-        </div>
-        <div className="score">
-          <span>{t("total")}</span>
-          <b data-testid="total-score">{num(runTotal(run))}</b>
-        </div>
-      </div>
-      <p className="hint" aria-live="polite">
-        <Rich text={hint} />
-      </p>
-      {gs.length > 0 && (
-        <div className="guesses">
-          {gs.map((g, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: guesses are append-only
-            <span key={i} className={`chip${i > 0 && g[2] < gs[i - 1][2] ? " warmer" : ""}`}>
-              {formatDistance(g[2], locale)}
-            </span>
-          ))}
-        </div>
-      )}
-      <div className="hud-actions">
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={onGiveUp}
-          disabled={!canGiveUp}
-          title={t("giveUpTitle")}
-        >
-          {t("giveUp")}
-        </button>
-        <button type="button" className="btn btn-ghost hide-mobile" onClick={onHistory}>
-          {t("myRuns")}
+        <button type="button" className="link phone-only menu" onClick={onHome}>
+          {t("menu")}
         </button>
       </div>
-    </section>
+      <div className="strip">
+        <div className="links">
+          <button type="button" className="link desk-only" onClick={onHome}>
+            {t("menu")}
+          </button>
+          {!done && (
+            <button type="button" className="link" onClick={onGiveUp} disabled={!canGiveUp} title={t("giveUpTitle")}>
+              {t("giveUp")}
+            </button>
+          )}
+        </div>
+        <p className="hint" aria-live="polite">
+          {hint && <Rich text={hint} />}
+          {cost > 0 && <span className="cost">{t("missCost", { points: cost })}</span>}
+        </p>
+        <div className="nums">
+          <span>
+            <span className="soft">{t(done ? "earned" : "left")}</span>
+            <b data-testid="round-score">{num(roundScore(round))}</b>
+          </span>
+          <span>
+            <span className="soft">{t("total")}</span>
+            <b data-testid="total-score">{num(runTotal(run))}</b>
+          </span>
+        </div>
+      </div>
+    </header>
   );
 }
