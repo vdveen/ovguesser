@@ -8,7 +8,9 @@ A guessing game for Dutch train stations: the player is shown a station name and
 - Player runs are stored in the browser (IndexedDB, `src/storage/`). Keep one record per run; don't add per-guess keys.
 - The server (`server/`) stores finished runs anonymously in Postgres and recomputes scores itself. Migrations are an append-only list in `server/db.ts`; never edit a shipped one.
 - Tests: `npm test` (set `TEST_DATABASE_URL` for the Postgres tests) and `npm run test:e2e` after `npm run build`.
-- UI copy is Dutch first, with English in `src/i18n/strings.ts`.
+- UI copy is Dutch first, with English in `src/i18n/strings.ts`. A run is an "uitdaging" ("challenge") in the UI, never a "rit"; code keeps the name `Run`.
+- The look follows option A in `docs/design/options.html`: station-sign blue (`#0b2e6f`), white and black, square corners, no yellow, no shadows or blur, Helvetica in two weights. Text on desktop sits on the three-column grid set by `--col1`/`--col3` in `src/styles.css`.
+- Panels that cover the map carry `data-inset="top|right|bottom|left"`; `useInsets` measures them so the camera frames the free part of the map. Don't set `position` on map marker elements: MapLibre's own `position: absolute` keeps them on their coordinates.
 - Deployed on Railway (project `ovguesser`, service `ovguesser`, with a `Postgres` service). Pushes to `main` deploy automatically after CI passes. Service settings are in `.railway/railway.ts` (applied with `railway config plan` / `apply`, never read at deploy time); there is no `railway.json`. The old version's tables (`train_stations`, `game_results`, `game_sessions`, `game_stats`) are still in that database and untouched.
 
 ## old_version/

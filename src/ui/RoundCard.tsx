@@ -11,6 +11,7 @@ interface Props {
   onNext: () => void;
 }
 
+/** Result of a round, across the bottom of the screen so the revealed station stays visible above it. */
 export function RoundCard({ run, stat, onNext }: Props) {
   const { t, num } = useI18n();
   const round = currentRound(run);
@@ -21,22 +22,21 @@ export function RoundCard({ run, stat, onNext }: Props) {
   useEffect(() => {
     button.current?.focus({ preventScroll: true });
   }, []);
-  const attempts = t(n === 1 ? "attempt" : "attempts");
+  const note = found
+    ? stat && stat.plays >= 5
+      ? stat.firstTry > 0
+        ? t("stationStat", { pct: stat.firstTry })
+        : t("stationStatNone")
+      : ""
+    : t("revealedMeta", { station: round.name });
   return (
-    <div className="round-card" role="dialog" aria-live="assertive" aria-labelledby="round-title">
-      <span className="pts">+{num(roundScore(round))}</span>
-      <div className="title" id="round-title">
-        {found ? t(n === 1 ? "foundFirst" : "found") : t("revealed")}
-      </div>
-      <div className="meta">
-        {found ? t("foundMeta", { station: round.name, n, attempts }) : t("revealedMeta", { station: round.name })}
-      </div>
-      {stat && stat.plays >= 5 && (
-        <div className="stat">{t("stationStat", { pct: stat.firstTry, station: round.name })}</div>
-      )}
-      <button ref={button} type="button" className="btn btn-primary wide" onClick={onNext}>
-        {t(last ? "seeRun" : "nextStation")} <kbd className="kbd-hint">Enter</kbd>
+    <section className="result" data-inset="bottom" role="dialog" aria-live="assertive" aria-labelledby="round-title">
+      <h2 id="round-title">{found ? (n === 1 ? t("foundFirst") : t("foundIn", { n })) : t("revealed")}</h2>
+      <p className="note">{note}</p>
+      <p className="pts">{found ? `+${num(roundScore(round))}` : "0"}</p>
+      <button ref={button} type="button" className="btn" onClick={onNext}>
+        {t(last ? "toResult" : "nextStation")} <kbd className="kbd-hint">Enter</kbd>
       </button>
-    </div>
+    </section>
   );
 }

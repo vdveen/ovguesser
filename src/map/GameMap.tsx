@@ -1,9 +1,10 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { GeoJSONSource, Map as MapLibreMap, Marker, PaddingOptions } from "maplibre-gl";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
-import { useEffect, useRef } from "react";
+import { type CSSProperties, useEffect, useRef } from "react";
 import railsUrl from "../data/rails.json?url";
 import { formatDistance } from "../game/distance";
+import { isHit } from "../game/scoring";
 import type { Guess } from "../game/types";
 import { loadBasemap } from "./basemap";
 
@@ -13,6 +14,14 @@ export const NL_BOUNDS: [[number, number], [number, number]] = [
   [3.3, 50.72],
   [7.25, 53.56],
 ];
+
+/** How far the game's panels reach into the map from each edge, in CSS pixels. */
+export interface Insets {
+  t: number;
+  r: number;
+  b: number;
+  l: number;
+}
 
 export interface MapView {
   /** Changing the key moves the camera. */
@@ -25,8 +34,11 @@ interface Props {
   guesses: Guess[];
   pending: [number, number] | null;
   station: { lat: number; lng: number; name: string } | null;
+  /** The stations of a finished run, shown as numbered stops on the results screen. */
+  stops: { lat: number; lng: number; name: string }[];
   view: MapView;
   padding: PaddingOptions;
+  insets: Insets;
   locale: string;
   label: string;
   interactive: boolean;
@@ -48,6 +60,10 @@ export function GameMap(props: Props) {
   const mapRef = useRef<MapLibreMap | null>(null);
   const libRef = useRef<MapLib | null>(null);
   const markers = useRef<Marker[]>([]);
+  const stationNode = useRef<HTMLElement | null>(null);
+  const stopNodes = useRef<{ node: HTMLElement; lngLat: [number, number] }[]>([]);
+  // Which view the camera last framed, and whether the player has moved the map since.
+  const framed = useRef({ key: "", userMoved: false });
   const propsRef = useRef(props);
   propsRef.current = props;
 
@@ -68,11 +84,12 @@ export function GameMap(props: Props) {
         style: basemap.style,
         bounds: NL_BOUNDS,
         fitBoundsOptions: { padding: propsRef.current.padding },
+        // Loose enough that the country can sit beside or between the start and results panels.
         maxBounds: [
-          [-1.0, 48.0],
-          [11.5, 56.0],
+          [-12, 40],
+          [18, 62],
         ],
-        minZoom: 5,
+        minZoom: 4,
         maxZoom: 16,
         dragRotate: false,
         pitchWithRotate: false,
@@ -84,7 +101,7 @@ export function GameMap(props: Props) {
       });
       map.touchZoomRotate.disableRotation();
       map.keyboard.disableRotation();
-      map.addControl(new lib.NavigationControl({ showCompass: false }), "bottom-right");
+      map.addControl(new lib.NavigationControl({ showCompass: false }), "top-right");
       map.addControl(new lib.ScaleControl({ unit: "metric" }), "bottom-left");
       mapRef.current = map;
       // Handle for end-to-end tests, which need to turn coordinates into click positions.
@@ -92,6 +109,10 @@ export function GameMap(props: Props) {
       map.on("click", (e) => {
         if (propsRef.current.interactive) propsRef.current.onPin([e.lngLat.lng, e.lngLat.lat]);
       });
+      map.on("movestart", (e) => {
+        if (e.originalEvent) framed.current.userMoved = true;
+      });
+      map.on("moveend", placeLabels);
       await map.once("load");
       if (cancelled) return;
       container.current.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
@@ -100,7 +121,7 @@ export function GameMap(props: Props) {
         id: "reveal-line",
         type: "line",
         source: "reveal",
-        paint: { "line-color": "#002d72", "line-width": 2, "line-dasharray": [1.5, 1.5] },
+        paint: { "line-color": "#0b2e6f", "line-width": 2, "line-dasharray": [2, 1.5] },
       });
       try {
         const res = await fetch(railsUrl);
@@ -112,7 +133,7 @@ export function GameMap(props: Props) {
             type: "line",
             source: "rails",
             filter: ["==", ["get", "u"], "t"],
-            paint: { "line-color": "#9ca3af", "line-width": 1.2, "line-dasharray": [2, 2] },
+            paint: { "line-color": "#9a9a9a", "line-width": 1.2, "line-dasharray": [2, 2] },
           },
           "reveal-line",
         );
@@ -124,7 +145,7 @@ export function GameMap(props: Props) {
             filter: ["!=", ["get", "u"], "t"],
             layout: { "line-cap": "round", "line-join": "round" },
             paint: {
-              "line-color": "#4b5563",
+              "line-color": "#1f1f1f",
               "line-width": [
                 "interpolate",
                 ["linear"],
@@ -156,26 +177,30 @@ export function GameMap(props: Props) {
     const map = mapRef.current;
     const lib = libRef.current;
     if (!map || !lib) return;
-    const { guesses, pending, station, locale } = propsRef.current;
+    const { guesses, pending, station, stops, locale } = propsRef.current;
     for (const m of markers.current) m.remove();
     markers.current = [];
+    stationNode.current = null;
+    stopNodes.current = [];
+    const add = (node: HTMLElement, lngLat: [number, number]) =>
+      markers.current.push(new lib.Marker({ element: node, anchor: "center" }).setLngLat(lngLat).addTo(map));
     guesses.forEach((g, i) => {
       const latest = i === guesses.length - 1;
-      const node = el(
-        `pin guess${latest ? " latest" : ""}`,
-        `<span class="pin-label">${i + 1} · ${formatDistance(g[2], locale)}</span>`,
-      );
-      markers.current.push(new lib.Marker({ element: node }).setLngLat([g[1], g[0]]).addTo(map));
+      // Once the station is shown, guesses keep only their number; the hit sits under the station itself.
+      const label = !station ? `${i + 1} · ${formatDistance(g[2], locale)}` : isHit(g[2]) ? "" : String(i + 1);
+      add(el(`pin guess${latest ? " latest" : ""}`, label && `<span class="pin-label">${label}</span>`), [g[1], g[0]]);
     });
-    if (pending) markers.current.push(new lib.Marker({ element: el("pin pending") }).setLngLat(pending).addTo(map));
+    if (pending) add(el("pin pending"), pending);
+    stops.forEach((s, i) => {
+      const node = el("stop-pin", `<i>${i + 1}</i><span>${escapeHtml(s.name)}</span>`);
+      add(node, [s.lng, s.lat]);
+      stopNodes.current.push({ node, lngLat: [s.lng, s.lat] });
+    });
     const reveal = map.getSource<GeoJSONSource>("reveal");
     if (station) {
-      const node = el("station-pin", `<div class="mini-sign">${escapeHtml(station.name)}</div><div class="dot"></div>`);
-      markers.current.push(
-        new lib.Marker({ element: node, anchor: "bottom", offset: [0, 7] })
-          .setLngLat([station.lng, station.lat])
-          .addTo(map),
-      );
+      const node = el("station-pin", `<span class="station-sign">${escapeHtml(station.name)}</span>`);
+      add(node, [station.lng, station.lat]);
+      stationNode.current = node;
       const last = guesses.at(-1);
       reveal?.setData({
         type: "FeatureCollection",
@@ -196,26 +221,63 @@ export function GameMap(props: Props) {
           : [],
       });
     } else reveal?.setData({ type: "FeatureCollection", features: [] });
+    placeLabels();
+  }
+
+  /**
+   * Hang the station's name to the left of it when there's room, so it doesn't cover the guesses east of it.
+   * Stop labels go right unless they would run past the right edge.
+   */
+  function placeLabels() {
+    const map = mapRef.current;
+    const { station, insets } = propsRef.current;
+    if (!map) return;
+    const node = stationNode.current;
+    if (node && station) {
+      const sign = node.querySelector<HTMLElement>(".station-sign");
+      const x = map.project([station.lng, station.lat]).x;
+      node.classList.toggle("left", x - (sign?.offsetWidth ?? 0) - 12 > insets.l);
+    }
+    const right = map.getContainer().clientWidth - insets.r;
+    for (const stop of stopNodes.current) {
+      const label = stop.node.querySelector<HTMLElement>("span");
+      const x = map.project(stop.lngLat).x;
+      stop.node.classList.toggle("left", x + 18 + (label?.offsetWidth ?? 0) > right);
+    }
   }
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: redraw whenever what's on the map changes
-  useEffect(drawOverlays, [props.guesses, props.pending, props.station, props.locale]);
+  useEffect(drawOverlays, [props.guesses, props.pending, props.station, props.stops, props.locale]);
 
-  // Move the camera when the view key changes.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: only the key triggers a camera move
+  // Move the camera when the view changes. When only the padding changes (a panel opened, the window
+  // resized), frame the same view again, unless the player has already moved the map themselves.
+  const { top = 0, right = 0, bottom = 0, left = 0 } = props.padding;
+  const paddingKey = [top, right, bottom, left].map(Math.round).join(",");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only the view key and the padding trigger a camera move
   useEffect(() => {
     const map = mapRef.current;
     const lib = libRef.current;
     if (!map || !lib) return;
     const { view, padding } = propsRef.current;
+    const newView = framed.current.key !== view.key;
+    if (!newView && framed.current.userMoved) return;
+    framed.current = { key: view.key, userMoved: false };
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const duration = reduced ? 0 : newView ? (view.kind === "round" ? 900 : 600) : 300;
     if (view.kind === "round" && view.points?.length) {
       const bounds = view.points.reduce((b, p) => b.extend(p), new lib.LngLatBounds(view.points[0], view.points[0]));
-      map.fitBounds(bounds, { padding, maxZoom: 12, duration: reduced ? 0 : 900 });
+      map.fitBounds(bounds, { padding, maxZoom: 12, duration });
     } else {
-      map.fitBounds(NL_BOUNDS, { padding, duration: reduced ? 0 : 600 });
+      map.fitBounds(NL_BOUNDS, { padding, duration });
     }
-  }, [props.view.key]);
+  }, [props.view.key, paddingKey]);
 
-  return <div ref={container} className="map" role="application" aria-label={props.label} />;
+  const vars = {
+    "--in-t": `${props.insets.t}px`,
+    "--in-r": `${props.insets.r}px`,
+    "--in-b": `${props.insets.b}px`,
+    "--in-l": `${props.insets.l}px`,
+  } as CSSProperties;
+
+  return <div ref={container} className="map" style={vars} role="application" aria-label={props.label} />;
 }

@@ -14,6 +14,7 @@ import { Hud } from "../ui/Hud";
 import { RoundCard } from "../ui/RoundCard";
 import { StartSheet } from "../ui/StartSheet";
 import { useGame } from "./useGame";
+import { useInsets } from "./useInsets";
 
 const POOL_KEY = "ovg-pool";
 const loadPool = (): Pool => {
@@ -35,7 +36,7 @@ function useViewport() {
 }
 
 export function App() {
-  const { t, num, locale } = useI18n();
+  const { t, num, locale, lang } = useI18n();
   const [toast, setToast] = useState<{ text: string; id: number; long?: boolean } | null>(null);
   const showToast = useCallback((text: string, long = false) => setToast({ text, id: Date.now(), long }), []);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -162,13 +163,12 @@ export function App() {
       setPreviousBest(0);
       game.show(done);
       void loadDaily(done);
-      showToast(t("dailyAlready"), true);
       return;
     }
     const ongoing = runs.find((x) => x.mode === "daily" && x.dateKey === today && x.status === "active");
     if (ongoing) game.resume(ongoing);
     else await game.start("daily", "all");
-  }, [game, showToast, t]);
+  }, [game]);
 
   const playFree = useCallback(() => game.start("classic", pool), [game, pool]);
 
@@ -223,31 +223,54 @@ export function App() {
     return () => removeEventListener("keydown", onKey);
   }, [phase, state.pending, historyOpen, game]);
 
-  const round = run && phase !== "start" && phase !== "loading" ? currentRound(run) : null;
+  const round = run && (phase === "guessing" || phase === "roundEnd") ? currentRound(run) : null;
   const station = useMemo(() => {
     if (!round?.outcome) return null;
     const s = STATION_BY_CODE.get(round.code);
     return s ? { lat: s.lat, lng: s.lng, name: round.name } : null;
   }, [round?.code, round?.outcome, round?.name]);
+  // On the results screen the map shows all five stations of the run.
+  const stops = useMemo(() => {
+    if (phase !== "runEnd" || !run) return [];
+    return run.rounds.flatMap((r) => {
+      const s = STATION_BY_CODE.get(r.code);
+      return s ? [{ lat: s.lat, lng: s.lng, name: r.name }] : [];
+    });
+  }, [phase, run]);
 
-  const hudHeight = mobile ? 205 : 0;
-  const padding =
-    phase === "start" || phase === "loading"
-      ? mobile
-        ? { top: 16, bottom: Math.round(h * 0.55), left: 8, right: 8 }
-        : { top: 40, bottom: 40, left: 40, right: 40 }
-      : mobile
-        ? { top: hudHeight + 10, bottom: phase === "guessing" ? 70 : 190, left: 24, right: 24 }
-        : { top: 60, bottom: phase === "guessing" ? 60 : 170, left: 400, right: 60 };
+  const modeLabel = (r: Run) =>
+    r.mode === "daily"
+      ? r.dateKey === dateKeyFor()
+        ? t("modeDaily")
+        : t("modeDailyOn", { date: formatDateKey(r.dateKey, locale) })
+      : t(r.pool === "intercity" ? "modeIntercity" : "modeFree");
+
+  const insets = useInsets(
+    [phase, run?.id, run?.current, round?.outcome, historyOpen, lang, mobile, active?.id, dailyDone?.id].join("|"),
+  );
+  const roundView = phase === "roundEnd" && !!station;
+  const edge = mobile ? 14 : 36;
+  const padding = {
+    // Extra room above a revealed station for its name sign.
+    top: insets.t + edge + (roundView ? (mobile ? 40 : 56) : 0),
+    bottom: insets.b + edge,
+    left: insets.l + edge,
+    right: insets.r + edge,
+  };
+  // If the panels leave only a sliver of map, frame the whole window instead.
+  if (h - padding.top - padding.bottom < 120) padding.bottom = Math.max(edge, h - padding.top - 120);
+  if (h - padding.top - padding.bottom < 120) padding.top = edge;
+  if (w - padding.left - padding.right < 160) padding.left = padding.right = edge;
 
   const view: MapView = useMemo(() => {
-    if (run && round?.outcome && (phase === "roundEnd" || phase === "runEnd") && station) {
+    if (run && round?.outcome && phase === "roundEnd" && station) {
       return {
         key: `round:${run.id}:${run.current}`,
         kind: "round",
         points: [...round.guesses.map((g) => [g[1], g[0]] as [number, number]), [station.lng, station.lat]],
       };
     }
+    if (run && phase === "runEnd") return { key: `end:${run.id}`, kind: "country" };
     return { key: `country:${phase === "start" ? "start" : `${run?.id}:${run?.current}`}`, kind: "country" };
   }, [run, round, phase, station]);
 
@@ -261,8 +284,10 @@ export function App() {
         guesses={round?.guesses ?? emptyGuesses}
         pending={state.pending}
         station={station}
+        stops={stops}
         view={view}
         padding={padding}
+        insets={insets}
         locale={locale}
         label={t("mapLabel")}
         interactive={phase === "guessing"}
@@ -273,11 +298,11 @@ export function App() {
       {run && round && (
         <Hud
           run={run}
+          modeLabel={modeLabel(run)}
           hasPin={!!state.pending}
           canGiveUp={phase === "guessing"}
           onHome={game.home}
           onGiveUp={game.giveUp}
-          onHistory={() => setHistoryOpen(true)}
         />
       )}
       <ConfirmBar
@@ -300,6 +325,7 @@ export function App() {
           pool={pool}
           playersToday={playersToday}
           memoryOnly={repo.kind === "memory"}
+          mobile={mobile}
           onPool={choosePool}
           onDaily={playDaily}
           onFree={playFree}
@@ -310,8 +336,10 @@ export function App() {
       {phase === "runEnd" && run && (
         <EndSheet
           run={run}
+          modeLabel={modeLabel(run)}
           previousBest={previousBest}
           daily={daily}
+          mobile={mobile}
           onShare={share}
           onAgain={playFree}
           onHistory={() => setHistoryOpen(true)}

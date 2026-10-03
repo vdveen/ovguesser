@@ -1,11 +1,11 @@
 # OVGuesser
 
-Guess where Dutch train stations are. Five stations per run, a daily ride that's the same for everyone, and your own history kept in your browser. Live at [ovguesser.nl](https://ovguesser.nl).
+Guess where Dutch train stations are. Five stations per challenge, a daily challenge that's the same for everyone, and your own history kept in your browser. Live at [ovguesser.nl](https://ovguesser.nl).
 
 ## How it works
 
 - The game runs in the browser. Station data ships with the app, and distances and scores are computed locally, so nothing waits on the server between clicks.
-- Runs are stored in the browser's IndexedDB: one record of about 1 kB per run, written after every guess. A reload resumes the run. "Mijn ritten" shows history and stats, and can export and import a JSON backup.
+- Runs are stored in the browser's IndexedDB: one record of about 1 kB per run, written after every guess. A reload resumes the run. "Mijn uitdagingen" shows history and stats, and can export and import a JSON backup.
 - When a run finishes, the browser sends it to the server anonymously. The server recomputes every distance and score from its own station data and stores the run in Postgres. That powers the daily ranking and the per-station "x% found it on the first try" line. No accounts, cookies or IP addresses.
 - The game keeps working if the server or database is down; only the shared statistics disappear.
 
@@ -27,6 +27,7 @@ data/            source data: Rijden de Treinen station list (CC0), OSM railway 
 e2e/             Playwright tests (desktop and phone)
 old_version/     the original Replit version, kept for reference
 docs/plan/       the rebuild plan and the first prototype
+docs/design/     the four design directions considered; the app follows option A (Perron)
 ```
 
 ## Development
