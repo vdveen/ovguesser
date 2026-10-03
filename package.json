@@ -35,6 +35,7 @@
     "fake-indexeddb": "^6.2.5",
     "idb": "^8.0.3",
     "maplibre-gl": "^6.11.2",
+    "railway": "^3.12.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "tsx": "^4.23.15",
